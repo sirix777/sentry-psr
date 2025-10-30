@@ -1,0 +1,81 @@
+{
+  "name": "sirix/sentry-psr",
+  "description": "PSR-compatible integration for Sentry — provides middleware for HTTP and error listener for console commands.",
+  "license": "MIT",
+  "type": "library",
+  "keywords": [
+    "sentry",
+    "psr-7",
+    "psr-15",
+    "psr-11",
+    "middleware",
+    "console",
+    "error-handler",
+    "php",
+    "sirix",
+    "mezzio"
+  ],
+  "homepage": "https://github.com/sirix777/sentry-psr",
+  "require": {
+    "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0",
+    "psr/container": "^1.1 || ^2.0",
+    "psr/http-message": "^1.0 || ^2.0",
+    "psr/http-server-middleware": "^1.0",
+    "sentry/sentry": "^4.0"
+  },
+  "require-dev": {
+    "bamarni/composer-bin-plugin": "^1.8",
+    "laminas/laminas-cli": "^1.13",
+    "monolog/monolog": "^3.9",
+    "phpunit/phpunit": "^11.5",
+    "psr/event-dispatcher": "^1.0",
+    "psr/log": "^2.0 || ^3.0",
+    "symfony/console": "^6.0 || ^7.0"
+  },
+  "suggest": {
+    "laminas/laminas-cli": "Optional, allows integration with Laminas CLI commands for error reporting.",
+    "mezzio/mezzio": "For seamless integration with the Mezzio framework via ConfigProvider.",
+    "monolog/monolog": "Optional PSR-3 logger integration for logging exceptions alongside Sentry.",
+    "symfony/console": "Required if you want to use the ConsoleErrorListener for CLI command error reporting."
+  },
+  "autoload": {
+    "psr-4": {
+      "Sirix\\SentryPsr\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Sirix\\SentryPsr\\Test\\": "test/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "bamarni/composer-bin-plugin": true
+    }
+  },
+  "extra": {
+    "bamarni-bin": {
+      "bin-links": false,
+      "forward-command": true,
+      "target-directory": "tools"
+    },
+    "laminas": {
+      "config-provider": "Sirix\\SentryPsr\\ConfigProvider"
+    }
+  },
+  "scripts": {
+    "analyse-deps": "tools/composer-dependency-analyser/vendor/bin/composer-dependency-analyser",
+    "check": [
+      "@cs-check",
+      "@rector",
+      "@phpstan",
+      "@test"
+    ],
+    "cs-check": "php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix --dry-run -vvv --diff",
+    "cs-fix": "php tools/php-cs-fixer/vendor/bin/php-cs-fixer fix -vvv",
+    "normalize": "@composer bin composer-normalize normalize --diff ../../composer.json",
+    "phpstan": "php tools/phpstan/vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=2G",
+    "rector": "php tools/rector/vendor/bin/rector process --dry-run --xdebug --memory-limit=2G",
+    "test": "phpunit --colors=always --testdox"
+  }
+}

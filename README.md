@@ -1,0 +1,199 @@
+# sirix/sentry-psr
+PSR-15 & PSR-11 integration for Sentry with optional console logging
+
+This library provides:
+
+- A PSR-15 middleware (`SentryErrorMiddleware`) that captures unhandled HTTP exceptions and forwards them to Sentry, with optional PSR-3 logging.
+- A factory for initializing and retrieving the Sentry hub (`SentryHubFactory`) from your DI container using your `config['sentry']` settings.
+- Optional console error listener (`SentryCommandListener`) for Symfony Console/Laminas CLI to capture exceptions in CLI commands.
+
+It is framework-agnostic and works with any PSR-11 container and PSR-15 middleware pipeline. A Mezzio/Laminas-friendly `ConfigProvider` is included.
+
+---
+
+## Requirements
+
+- PHP ~8.1 | ~8.2 | ~8.3 | ~8.4
+- `sentry/sentry` ^4.0
+- PSR packages as needed: `psr/container`, `psr/http-message`, `psr/http-server-middleware`
+- Optional:
+  - `psr/log` or `monolog/monolog` for logging alongside Sentry
+  - `symfony/console` (and optionally `laminas/laminas-cli`) for console integration
+
+## Installation
+
+```bash
+composer require sirix/sentry-psr
+```
+
+Make sure you also require and configure `sentry/sentry` per your needs. This package wires Sentry using your container config.
+
+## Configuration
+
+Provide your Sentry configuration under the `sentry` key in your container config (e.g., `config/autoload/*.php` for Mezzio/Laminas, or however you build your container). The array is passed to `Sentry\init()`.
+
+Minimal example:
+
+```php
+return [
+    'sentry' => [
+        'dsn' => 'https://<key>@sentry.io/<project>',
+        // Any options supported by Sentry PHP SDK, e.g.:
+        // 'environment' => 'production',
+        // 'release' => '1.2.3',
+        // 'traces_sample_rate' => 0.1,
+    ],
+];
+```
+
+## DI Container wiring
+
+This library exposes factories to a PSR-11 container:
+
+- `Sentry\State\HubInterface` → `Sirix\SentryPsr\Hub\SentryHubFactory`
+- `Sirix\SentryPsr\Middleware\SentryErrorMiddleware` → `Sirix\SentryPsr\Middleware\SentryErrorMiddlewareFactory`
+- Optional console (see below):
+  - `Sirix\SentryPsr\Listener\SentryCommandListener` → `Sirix\SentryPsr\Listener\SentryCommandListenerFactory`
+  - `Symfony\Component\EventDispatcher\EventDispatcher` → `Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory`
+
+### Mezzio/Laminas projects
+
+Add the `ConfigProvider` by installing the package. If you use Laminas Config Aggregator, this happens automatically via Composer extra metadata:
+
+```json
+{
+  "extra": {
+    "laminas": {
+      "config-provider": "Sirix\\SentryPsr\\ConfigProvider"
+    }
+  }
+}
+```
+
+The `ConfigProvider` registers factories for:
+
+- `Sentry\State\HubInterface`
+- `Sirix\SentryPsr\Middleware\SentryErrorMiddleware`
+
+Note: Console-related factories are auto-registered when `symfony/console` is installed (i.e., when `Symfony\Component\Console\Command\Command` exists). If `symfony/console` is not present or you need custom wiring, see the Console integration section.
+
+### Aliases added by ConfigProvider (when symfony/console is present)
+
+When `symfony/console` is installed (e.g., for Laminas CLI or a Symfony Console app), the `ConfigProvider` also registers helpful service aliases so you can type-hint against PSR-14 and common Laminas CLI expectations:
+
+- `Psr\EventDispatcher\EventDispatcherInterface` ⇒ `Symfony\Component\EventDispatcher\EventDispatcher`
+- `'Laminas\Cli\SymfonyEventDispatcher'` ⇒ `Symfony\Component\EventDispatcher\EventDispatcher`
+
+These aliases are only active when `Symfony\Component\Console\Command\Command` is available. They map to the dispatcher created by `Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory`.
+
+
+## HTTP: SentryErrorMiddleware (PSR-15)
+
+Place the middleware in your pipeline so that it wraps your application code. On any unhandled `Throwable`, it will:
+
+- call `HubInterface::captureException($e)`
+- optionally log the error via a PSR-3 `LoggerInterface` if present in the container
+- rethrow the exception so your framework still handles the error response
+
+Example (Mezzio `config/pipeline.php`):
+
+```php
+use Psr\Container\ContainerInterface;
+use Sirix\SentryPsr\Middleware\SentryErrorMiddleware;
+
+return function (App $app, ContainerInterface $container): void {
+    // Put SentryErrorMiddleware early in the pipeline
+    $app->pipe(SentryErrorMiddleware::class);
+
+    // ... your routing and other middleware
+};
+```
+
+If you use a custom container, ensure the following registrations exist (pseudo-config):
+
+```php
+return [
+    'factories' => [
+        Sentry\State\HubInterface::class => Sirix\SentryPsr\Hub\SentryHubFactory::class,
+        Sirix\SentryPsr\Middleware\SentryErrorMiddleware::class => Sirix\SentryPsr\Middleware\SentryErrorMiddlewareFactory::class,
+
+        // optional logger wiring (any of these will be auto-detected by the factory):
+        // Psr\Log\LoggerInterface::class => YourLoggerFactory::class,
+        // Monolog\Logger::class => YourMonologFactory::class,
+        // 'logger' => YourLegacyLoggerFactory::class,
+    ],
+    'sentry' => [
+        'dsn' => 'https://<key>@sentry.io/<project>',
+    ],
+];
+```
+
+## Console integration (optional)
+
+If you use Symfony Console (directly or via Laminas CLI), you can capture console command errors and enrich the Sentry scope.
+
+Available pieces:
+
+- `Sirix\SentryPsr\Listener\SentryCommandListener` subscribes to console events:
+  - adds a breadcrumb when a command starts
+  - on errors, captures the exception and logs useful context (command, args, options, exit code)
+- `Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory` produces a `Symfony\Component\EventDispatcher\EventDispatcher`, which you can share with `symfony/console` or `laminas/laminas-cli`.
+
+Manual wiring example (Mezzio/Laminas with Laminas CLI):
+
+```php
+use Sirix\SentryPsr\Listener\SentryCommandListener;
+use Sirix\SentryPsr\Listener\SentryCommandListenerFactory;
+use Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+
+return [
+    'factories' => [
+        Sentry\State\HubInterface::class => Sirix\SentryPsr\Hub\SentryHubFactory::class,
+        Sirix\SentryPsr\Listener\SentryCommandListener::class => SentryCommandListenerFactory::class,
+        EventDispatcher::class => ConsoleEventDispatcherFactory::class,
+        // For Laminas CLI specifically (it expects this alias):
+        'Laminas\Cli\SymfonyEventDispatcher' => ConsoleEventDispatcherFactory::class,
+    ],
+];
+```
+
+Then register the listener with your dispatcher during app bootstrap, for example:
+
+```php
+$dispatcher = $container->get(Symfony\Component\EventDispatcher\EventDispatcher::class);
+$listener   = $container->get(Sirix\SentryPsr\Listener\SentryCommandListener::class);
+$dispatcher->addSubscriber($listener);
+```
+
+If you build the dispatcher in your `ConsoleApplicationFactory`, just call `addSubscriber()` there.
+
+## Logging
+
+`SentryErrorMiddlewareFactory` will attempt to inject a PSR-3 logger if available. It looks up, in order:
+
+1. `Psr\Log\LoggerInterface`
+2. `Monolog\Logger`
+3. service name `'logger'`
+
+If none are present, logging is skipped and only Sentry capture occurs.
+
+## Examples
+
+- Capture unhandled HTTP exceptions: place `SentryErrorMiddleware` early in your middleware pipeline.
+- Enrich context: set `environment`, `release`, `traces_sample_rate` in your `sentry` config.
+- Console command tracking: register `SentryCommandListener` with your `EventDispatcher`.
+
+## Development
+
+Useful Composer scripts:
+
+- `composer test` – run PHPUnit
+- `composer cs-check` / `composer cs-fix` – code style
+- `composer phpstan` – static analysis
+- `composer rector` – automated refactoring (dry-run by default)
+- `composer check` – run all checks
+
+## License
+
+MIT © Sirix
