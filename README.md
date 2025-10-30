@@ -5,6 +5,7 @@ This library provides:
 
 - A PSR-15 middleware (`SentryErrorMiddleware`) that captures unhandled HTTP exceptions and forwards them to Sentry, with optional PSR-3 logging.
 - A factory for initializing and retrieving the Sentry hub (`SentryHubFactory`) from your DI container using your `config['sentry']` settings.
+- A small convenience helper (`SentryHelper`) with static methods to capture exceptions/messages, add breadcrumbs, set user/tags/context. Its factory wires the current `HubInterface` so the helper uses your configured hub.
 - Optional console error listener (`SentryCommandListener`) for Symfony Console/Laminas CLI to capture exceptions in CLI commands.
 
 It is framework-agnostic and works with any PSR-11 container and PSR-15 middleware pipeline. A Mezzio/Laminas-friendly `ConfigProvider` is included.
@@ -52,6 +53,7 @@ This library exposes factories to a PSR-11 container:
 
 - `Sentry\State\HubInterface` → `Sirix\SentryPsr\Hub\SentryHubFactory`
 - `Sirix\SentryPsr\Middleware\SentryErrorMiddleware` → `Sirix\SentryPsr\Middleware\SentryErrorMiddlewareFactory`
+- `Sirix\SentryPsr\Helper\SentryHelper` → `Sirix\SentryPsr\Helper\SentryHelperFactory`
 - Optional console (see below):
   - `Sirix\SentryPsr\Listener\SentryCommandListener` → `Sirix\SentryPsr\Listener\SentryCommandListenerFactory`
   - `Symfony\Component\EventDispatcher\EventDispatcher` → `Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory`
@@ -74,6 +76,7 @@ The `ConfigProvider` registers factories for:
 
 - `Sentry\State\HubInterface`
 - `Sirix\SentryPsr\Middleware\SentryErrorMiddleware`
+- `Sirix\SentryPsr\Helper\SentryHelper`
 
 Note: Console-related factories are auto-registered when `symfony/console` is installed (i.e., when `Symfony\Component\Console\Command\Command` exists). If `symfony/console` is not present or you need custom wiring, see the Console integration section.
 
@@ -110,12 +113,12 @@ return function (App $app, ContainerInterface $container): void {
 ```
 
 If you use a custom container, ensure the following registrations exist (pseudo-config):
-
 ```php
 return [
     'factories' => [
         Sentry\State\HubInterface::class => Sirix\SentryPsr\Hub\SentryHubFactory::class,
         Sirix\SentryPsr\Middleware\SentryErrorMiddleware::class => Sirix\SentryPsr\Middleware\SentryErrorMiddlewareFactory::class,
+        Sirix\SentryPsr\Helper\SentryHelper::class => Sirix\SentryPsr\Helper\SentryHelperFactory::class,
 
         // optional logger wiring (any of these will be auto-detected by the factory):
         // Psr\Log\LoggerInterface::class => YourLoggerFactory::class,
@@ -177,6 +180,45 @@ If you build the dispatcher in your `ConsoleApplicationFactory`, just call `addS
 3. service name `'logger'`
 
 If none are present, logging is skipped and only Sentry capture occurs.
+
+## Helper: SentryHelper
+
+`Sirix\\SentryPsr\\Helper\\SentryHelper` is a tiny static helper around the current Sentry hub. It provides convenient methods to capture exceptions/messages and enrich the Sentry scope with breadcrumbs, user, tags, and context.
+
+How it is wired:
+- When you use this package's `ConfigProvider`, a factory (`SentryHelperFactory`) is registered. Fetching `SentryHelper::class` from the container ensures the helper is initialized with the container's `HubInterface`.
+- If you don't use the `ConfigProvider`, you can initialize manually via either of the following:
+  - `SentryHelper::initFromContainer($container);`
+  - `SentryHelper::setHub($container->get(\Sentry\State\HubInterface::class));`
+
+Common usage:
+
+```php
+use Sirix\SentryPsr\Helper\SentryHelper;
+
+// Capture an exception with extra context
+try {
+    // ... your code ...
+} catch (\Throwable $e) {
+    SentryHelper::captureException($e, ['foo' => 'bar']);
+}
+
+// Capture a message at different levels
+SentryHelper::captureMessage('Something happened', 'warning', ['userId' => 123]);
+SentryHelper::captureMessage('Debug info', 'debug');
+
+// Add a breadcrumb
+SentryHelper::addBreadcrumb('User clicked checkout', 'ui', 'info', ['step' => 'shipping']);
+
+// Enrich scope
+SentryHelper::setUser(['id' => '123', 'email' => 'alice@example.com']);
+SentryHelper::setTag('feature', 'checkout');
+SentryHelper::setContext('request', ['ip' => '203.0.113.10']);
+```
+
+Notes:
+- Levels for `captureMessage`: `debug`, `info`, `warning`, `error` (default), `fatal`.
+- Levels for `addBreadcrumb`: `debug`, `info` (default), `warning`, `error`, `fatal`.
 
 ## Examples
 

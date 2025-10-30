@@ -7,6 +7,8 @@ namespace Sirix\SentryPsr;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Sentry\State\HubInterface;
 use Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory;
+use Sirix\SentryPsr\Helper\SentryHelper;
+use Sirix\SentryPsr\Helper\SentryHelperFactory;
 use Sirix\SentryPsr\Hub\SentryHubFactory;
 use Sirix\SentryPsr\Listener\SentryCommandListener;
 use Sirix\SentryPsr\Listener\SentryCommandListenerFactory;
@@ -45,6 +47,7 @@ class ConfigProvider
         $factories = [
             HubInterface::class => SentryHubFactory::class,
             SentryErrorMiddleware::class => SentryErrorMiddlewareFactory::class,
+            SentryHelper::class => SentryHelperFactory::class,
         ];
 
         if (class_exists(Command::class)) {
