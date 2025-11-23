@@ -52,6 +52,9 @@ class ConfigProvider
 
         if (class_exists(Command::class)) {
             $factories[SentryCommandListener::class] = SentryCommandListenerFactory::class;
+        }
+
+        if (class_exists(EventDispatcher::class)) {
             $factories[EventDispatcher::class] = ConsoleEventDispatcherFactory::class;
         }
 
@@ -63,13 +66,13 @@ class ConfigProvider
      */
     protected function getAliases(): array
     {
-        if (class_exists(Command::class)) {
-            return [
-                'Laminas\Cli\SymfonyEventDispatcher' => EventDispatcher::class,
-                EventDispatcherInterface::class => EventDispatcher::class,
-            ];
+        $aliases = [];
+
+        if (class_exists(EventDispatcher::class)) {
+            $aliases['Laminas\Cli\SymfonyEventDispatcher'] = EventDispatcher::class;
+            $aliases[EventDispatcherInterface::class] = EventDispatcher::class;
         }
 
-        return [];
+        return $aliases;
     }
 }

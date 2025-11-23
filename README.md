@@ -14,12 +14,13 @@ It is framework-agnostic and works with any PSR-11 container and PSR-15 middlewa
 
 ## Requirements
 
-- PHP ~8.1 | ~8.2 | ~8.3 | ~8.4
+- PHP ~8.2 || ~8.3 || ~8.4 || ~8.5
 - `sentry/sentry` ^4.0
 - PSR packages as needed: `psr/container`, `psr/http-message`, `psr/http-server-middleware`
 - Optional:
   - `psr/log` or `monolog/monolog` for logging alongside Sentry
   - `symfony/console` (and optionally `laminas/laminas-cli`) for console integration
+  - `symfony/event-dispatcher` if you want the Symfony EventDispatcher service/aliases to be auto‑wired
 
 ## Installation
 
@@ -78,16 +79,19 @@ The `ConfigProvider` registers factories for:
 - `Sirix\SentryPsr\Middleware\SentryErrorMiddleware`
 - `Sirix\SentryPsr\Helper\SentryHelper`
 
-Note: Console-related factories are auto-registered when `symfony/console` is installed (i.e., when `Symfony\Component\Console\Command\Command` exists). If `symfony/console` is not present or you need custom wiring, see the Console integration section.
+Notes:
 
-### Aliases added by ConfigProvider (when symfony/console is present)
+- Console-related factories are auto-registered when `symfony/console` is installed (i.e., when `Symfony\Component\Console\Command\Command` exists). If `symfony/console` is not present or you need custom wiring, see the Console integration section.
+- The Symfony EventDispatcher factory and aliases are registered only when `symfony/event-dispatcher` is installed (i.e., when `Symfony\Component\EventDispatcher\EventDispatcher` exists).
 
-When `symfony/console` is installed (e.g., for Laminas CLI or a Symfony Console app), the `ConfigProvider` also registers helpful service aliases so you can type-hint against PSR-14 and common Laminas CLI expectations:
+### Aliases added by ConfigProvider (when symfony/event-dispatcher is present)
+
+When `symfony/event-dispatcher` is installed, the `ConfigProvider` also registers helpful service aliases so you can type-hint against PSR-14 and common Laminas CLI expectations:
 
 - `Psr\EventDispatcher\EventDispatcherInterface` ⇒ `Symfony\Component\EventDispatcher\EventDispatcher`
 - `'Laminas\Cli\SymfonyEventDispatcher'` ⇒ `Symfony\Component\EventDispatcher\EventDispatcher`
 
-These aliases are only active when `Symfony\Component\Console\Command\Command` is available. They map to the dispatcher created by `Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory`.
+These aliases are only active when `Symfony\Component\EventDispatcher\EventDispatcher` is available. They map to the dispatcher created by `Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory`.
 
 
 ## HTTP: SentryErrorMiddleware (PSR-15)
