@@ -1,4 +1,6 @@
 # sirix/sentry-psr
+[![Latest Stable Version](http://poser.pugx.org/sirix/sentry-psr/v)](https://packagist.org/packages/sirix/sentry-psr) [![Total Downloads](http://poser.pugx.org/sirix/sentry-psr/downloads)](https://packagist.org/packages/sirix/sentry-psr) [![Latest Unstable Version](http://poser.pugx.org/sirix/sentry-psr/v/unstable)](https://packagist.org/packages/sirix/sentry-psr) [![License](http://poser.pugx.org/sirix/sentry-psr/license)](https://packagist.org/packages/sirix/sentry-psr) [![PHP Version Require](http://poser.pugx.org/sirix/sentry-psr/require/php)](https://packagist.org/packages/sirix/sentry-psr)
+
 PSR-15 & PSR-11 integration for Sentry with optional console logging
 
 This library provides:
