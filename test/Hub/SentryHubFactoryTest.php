@@ -28,7 +28,7 @@ final class SentryHubFactoryTest extends TestCase
         parent::setUp();
 
         $this->containerMock = $this->createMock(ContainerInterface::class);
-        $this->factory = new SentryHubFactory();
+        $this->factory       = new SentryHubFactory();
 
         SentrySdk::setCurrentHub(new Hub());
     }
@@ -57,7 +57,7 @@ final class SentryHubFactoryTest extends TestCase
 
         $this->containerMock->method('get')->with('config')->willReturn([
             'sentry' => [
-                'dsn' => $dsn,
+                'dsn'         => $dsn,
                 'environment' => 'test',
             ],
         ]);
@@ -76,7 +76,7 @@ final class SentryHubFactoryTest extends TestCase
     {
         $this->containerMock->method('get')->with('config')->willReturn([
             'sentry' => [
-                'dsn' => null,
+                'dsn'         => null,
                 'environment' => 'test',
             ],
         ]);

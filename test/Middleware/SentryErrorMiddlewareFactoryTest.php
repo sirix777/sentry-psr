@@ -32,8 +32,8 @@ final class SentryErrorMiddlewareFactoryTest extends TestCase
         parent::setUp();
 
         $this->containerMock = $this->createMock(ContainerInterface::class);
-        $this->hubMock = $this->createMock(HubInterface::class);
-        $this->factory = new SentryErrorMiddlewareFactory();
+        $this->hubMock       = $this->createMock(HubInterface::class);
+        $this->factory       = new SentryErrorMiddlewareFactory();
     }
 
     /**

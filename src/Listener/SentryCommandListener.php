@@ -14,15 +14,12 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class SentryCommandListener implements EventSubscriberInterface
 {
-    public function __construct(
-        private readonly HubInterface $sentryHub,
-        private readonly ?LoggerInterface $logger = null
-    ) {}
+    public function __construct(private readonly HubInterface $sentryHub, private readonly ?LoggerInterface $logger = null) {}
 
     public static function getSubscribedEvents(): array
     {
         return [
-            ConsoleEvents::ERROR => ['onConsoleError', -128],
+            ConsoleEvents::ERROR   => ['onConsoleError', -128],
             ConsoleEvents::COMMAND => ['onConsoleCommand', -128],
         ];
     }
@@ -35,9 +32,9 @@ class SentryCommandListener implements EventSubscriberInterface
             $scope->setTag('command', $command?->getName() ?? 'unknown');
             $scope->setTag('type', 'console');
             $scope->setContext('command', [
-                'name' => $command?->getName(),
+                'name'      => $command?->getName(),
                 'arguments' => $event->getInput()->getArguments(),
-                'options' => $event->getInput()->getOptions(),
+                'options'   => $event->getInput()->getOptions(),
             ]);
         });
 
@@ -61,24 +58,24 @@ class SentryCommandListener implements EventSubscriberInterface
     public function onConsoleError(ConsoleErrorEvent $event): void
     {
         $exception = $event->getError();
-        $command = $event->getCommand();
+        $command   = $event->getCommand();
 
         $this->sentryHub->configureScope(function($scope) use ($command, $event): void {
             $scope->setTag('command', $command?->getName() ?? 'unknown');
             $scope->setTag('exit_code', (string) $event->getExitCode());
             $scope->setContext('command', [
-                'name' => $command?->getName(),
+                'name'      => $command?->getName(),
                 'arguments' => $event->getInput()->getArguments(),
-                'options' => $event->getInput()->getOptions(),
+                'options'   => $event->getInput()->getOptions(),
             ]);
         });
 
         $exceptionId = $this->sentryHub->captureException($exception);
 
         $this->logger?->error('Command failed with exception', [
-            'command' => $command?->getName(),
+            'command'   => $command?->getName(),
             'exception' => $exception->getMessage(),
-            'trace' => $exception->getTraceAsString(),
+            'trace'     => $exception->getTraceAsString(),
             'sentry_id' => $exceptionId,
         ]);
     }

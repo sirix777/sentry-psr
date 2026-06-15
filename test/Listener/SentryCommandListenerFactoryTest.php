@@ -31,9 +31,9 @@ final class SentryCommandListenerFactoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->hubMock = $this->createMock(HubInterface::class);
+        $this->hubMock       = $this->createMock(HubInterface::class);
         $this->containerMock = $this->createMock(ContainerInterface::class);
-        $this->factory = new SentryCommandListenerFactory();
+        $this->factory       = new SentryCommandListenerFactory();
     }
 
     /**

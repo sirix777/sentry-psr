@@ -32,9 +32,9 @@ final class SentryCommandListenerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->hubMock = $this->createMock(HubInterface::class);
+        $this->hubMock    = $this->createMock(HubInterface::class);
         $this->loggerMock = $this->createMock(LoggerInterface::class);
-        $this->listener = new SentryCommandListener($this->hubMock, $this->loggerMock);
+        $this->listener   = new SentryCommandListener($this->hubMock, $this->loggerMock);
     }
 
     public function testGetSubscribedEvents(): void
@@ -50,7 +50,9 @@ final class SentryCommandListenerTest extends TestCase
     public function testOnConsoleCommandConfiguresScopeAndLogs(): void
     {
         $command = new Command('test:cmd');
-        $input = new ArrayInput(['arg1' => 'val']);
+        $input   = new ArrayInput([
+            'arg1' => 'val',
+        ]);
         $event = new ConsoleCommandEvent($command, $input, new NullOutput());
 
         $this->hubMock
@@ -74,7 +76,9 @@ final class SentryCommandListenerTest extends TestCase
                     && Breadcrumb::TYPE_DEFAULT === $breadcrumb->getType()
                     && 'console' === $breadcrumb->getCategory()
                     && 'Console command started' === $breadcrumb->getMessage()
-                    && ['command' => 'test:cmd'] === $breadcrumb->getMetadata();
+                    && [
+                        'command' => 'test:cmd',
+                    ] === $breadcrumb->getMetadata();
             }))
         ;
 
@@ -92,11 +96,11 @@ final class SentryCommandListenerTest extends TestCase
 
     public function testOnConsoleErrorCapturesExceptionAndLogs(): void
     {
-        $command = new Command('fail:cmd');
-        $input = new ArrayInput([]);
-        $output = new NullOutput();
+        $command   = new Command('fail:cmd');
+        $input     = new ArrayInput([]);
+        $output    = new NullOutput();
         $exception = new RuntimeException('Failure');
-        $event = new ConsoleErrorEvent($input, $output, $exception, $command);
+        $event     = new ConsoleErrorEvent($input, $output, $exception, $command);
 
         $eventId = new EventId('b27d9f5b3c234d1ab0e11f76bb6af2e7');
 
@@ -141,8 +145,8 @@ final class SentryCommandListenerTest extends TestCase
         $listener = new SentryCommandListener($this->hubMock, null);
 
         $command = new Command('no:log');
-        $input = new ArrayInput([]);
-        $event = new ConsoleCommandEvent($command, $input, new NullOutput());
+        $input   = new ArrayInput([]);
+        $event   = new ConsoleCommandEvent($command, $input, new NullOutput());
 
         $this->hubMock
             ->expects($this->once())

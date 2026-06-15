@@ -24,7 +24,7 @@ class SentryHelperTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->hubMock = $this->createMock(HubInterface::class);
+        $this->hubMock   = $this->createMock(HubInterface::class);
         $this->scopeMock = $this->createMock(Scope::class);
 
         $this->hubMock->method('withScope')->willReturnCallback(
@@ -53,7 +53,9 @@ class SentryHelperTest extends TestCase
 
         $this->scopeMock->expects($this->once())
             ->method('setContext')
-            ->with('additional_context', ['foo' => 'bar'])
+            ->with('additional_context', [
+                'foo' => 'bar',
+            ])
         ;
 
         $this->scopeMock->expects($this->once())
@@ -61,7 +63,9 @@ class SentryHelperTest extends TestCase
             ->with(Severity::error())
         ;
 
-        SentryHelper::captureException($exception, ['foo' => 'bar']);
+        SentryHelper::captureException($exception, [
+            'foo' => 'bar',
+        ]);
     }
 
     public function testCaptureMessage(): void
@@ -75,7 +79,9 @@ class SentryHelperTest extends TestCase
 
         $this->scopeMock->expects($this->once())
             ->method('setContext')
-            ->with('additional_context', ['key' => 'value'])
+            ->with('additional_context', [
+                'key' => 'value',
+            ])
         ;
 
         $this->scopeMock->expects($this->once())
@@ -83,7 +89,9 @@ class SentryHelperTest extends TestCase
             ->with(Severity::warning())
         ;
 
-        SentryHelper::captureMessage($message, 'warning', ['key' => 'value']);
+        SentryHelper::captureMessage($message, 'warning', [
+            'key' => 'value',
+        ]);
     }
 
     public function testAddBreadcrumb(): void
@@ -94,16 +102,23 @@ class SentryHelperTest extends TestCase
                 return 'Test breadcrumb' === $breadcrumb->getMessage()
                     && Breadcrumb::LEVEL_INFO === $breadcrumb->getLevel()
                     && 'custom' === $breadcrumb->getCategory()
-                    && $breadcrumb->getMetadata() === ['foo' => 'bar'];
+                    && $breadcrumb->getMetadata() === [
+                        'foo' => 'bar',
+                    ];
             }))
         ;
 
-        SentryHelper::addBreadcrumb('Test breadcrumb', 'custom', 'info', ['foo' => 'bar']);
+        SentryHelper::addBreadcrumb('Test breadcrumb', 'custom', 'info', [
+            'foo' => 'bar',
+        ]);
     }
 
     public function testSetUser(): void
     {
-        $user = ['id' => 123, 'email' => 'test@example.com'];
+        $user = [
+            'id'    => 123,
+            'email' => 'test@example.com',
+        ];
 
         $this->scopeMock->expects($this->once())
             ->method('setUser')
@@ -125,7 +140,9 @@ class SentryHelperTest extends TestCase
 
     public function testSetContext(): void
     {
-        $context = ['a' => 1];
+        $context = [
+            'a' => 1,
+        ];
 
         $this->scopeMock->expects($this->once())
             ->method('setContext')

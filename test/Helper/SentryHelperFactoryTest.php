@@ -28,8 +28,8 @@ class SentryHelperFactoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->factory = new SentryHelperFactory();
-        $this->hubMock = $this->createMock(HubInterface::class);
+        $this->factory       = new SentryHelperFactory();
+        $this->hubMock       = $this->createMock(HubInterface::class);
         $this->containerMock = $this->createMock(ContainerInterface::class);
     }
 

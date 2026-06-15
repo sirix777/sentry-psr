@@ -33,7 +33,7 @@ class ConfigProvider
     {
         return [
             'dependencies' => [
-                'aliases' => $this->getAliases(),
+                'aliases'   => $this->getAliases(),
                 'factories' => $this->getFactories(),
             ],
         ];
@@ -45,9 +45,9 @@ class ConfigProvider
     protected function getFactories(): array
     {
         $factories = [
-            HubInterface::class => SentryHubFactory::class,
+            HubInterface::class          => SentryHubFactory::class,
             SentryErrorMiddleware::class => SentryErrorMiddlewareFactory::class,
-            SentryHelper::class => SentryHelperFactory::class,
+            SentryHelper::class          => SentryHelperFactory::class,
         ];
 
         if (class_exists(Command::class)) {
@@ -70,7 +70,7 @@ class ConfigProvider
 
         if (class_exists(EventDispatcher::class)) {
             $aliases['Laminas\Cli\SymfonyEventDispatcher'] = EventDispatcher::class;
-            $aliases[EventDispatcherInterface::class] = EventDispatcher::class;
+            $aliases[EventDispatcherInterface::class]      = EventDispatcher::class;
         }
 
         return $aliases;

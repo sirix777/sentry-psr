@@ -32,10 +32,10 @@ class SentryErrorMiddlewareTest extends TestCase
     {
         parent::setUp();
 
-        $this->hubMock = $this->createMock(HubInterface::class);
-        $this->loggerMock = $this->createMock(LoggerInterface::class);
-        $this->requestMock = $this->createMock(ServerRequestInterface::class);
-        $this->handlerMock = $this->createMock(RequestHandlerInterface::class);
+        $this->hubMock      = $this->createMock(HubInterface::class);
+        $this->loggerMock   = $this->createMock(LoggerInterface::class);
+        $this->requestMock  = $this->createMock(ServerRequestInterface::class);
+        $this->handlerMock  = $this->createMock(RequestHandlerInterface::class);
         $this->responseMock = $this->createMock(ResponseInterface::class);
     }
 

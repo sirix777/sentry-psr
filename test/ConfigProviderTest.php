@@ -29,7 +29,7 @@ final class ConfigProviderTest extends TestCase
     public function testConfigProviderReturnsDependencies(): void
     {
         $provider = new ConfigProvider();
-        $config = $provider();
+        $config   = $provider();
 
         $this->assertArrayHasKey('dependencies', $config);
         $dependencies = $config['dependencies'];
@@ -69,7 +69,7 @@ final class ConfigProviderTest extends TestCase
             protected function getFactories(): array
             {
                 $factories = [
-                    HubInterface::class => SentryHubFactory::class,
+                    HubInterface::class          => SentryHubFactory::class,
                     SentryErrorMiddleware::class => SentryErrorMiddlewareFactory::class,
                 ];
 
@@ -95,7 +95,7 @@ final class ConfigProviderTest extends TestCase
         $config = $provider();
 
         $factories = $config['dependencies']['factories'];
-        $aliases = $config['dependencies']['aliases'];
+        $aliases   = $config['dependencies']['aliases'];
 
         $this->assertArrayNotHasKey('dummy', $factories);
         $this->assertEmpty($aliases);

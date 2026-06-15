@@ -28,7 +28,7 @@ final class ConsoleEventDispatcherFactoryTest extends TestCase
         parent::setUp();
 
         $this->containerMock = $this->createMock(ContainerInterface::class);
-        $this->factory = new ConsoleEventDispatcherFactory();
+        $this->factory       = new ConsoleEventDispatcherFactory();
     }
 
     /**
@@ -40,7 +40,9 @@ final class ConsoleEventDispatcherFactoryTest extends TestCase
         $listener = new class implements EventSubscriberInterface {
             public static function getSubscribedEvents(): array
             {
-                return ['console.error' => 'onError'];
+                return [
+                    'console.error' => 'onError',
+                ];
             }
         };
 

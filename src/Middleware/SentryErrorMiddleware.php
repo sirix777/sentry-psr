@@ -29,7 +29,7 @@ class SentryErrorMiddleware implements MiddlewareInterface
             $this->logger?->error(
                 $exception->getMessage(),
                 [
-                    'exception' => $exception,
+                    'exception'    => $exception,
                     'request_path' => $request->getUri()->getPath(),
                 ]
             );

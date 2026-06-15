@@ -55,11 +55,11 @@ final class SentryHelper
         $hub = self::getHub();
 
         $severity = match ($level) {
-            'debug' => Severity::debug(),
-            'info' => Severity::info(),
+            'debug'   => Severity::debug(),
+            'info'    => Severity::info(),
             'warning' => Severity::warning(),
-            'fatal' => Severity::fatal(),
-            default => Severity::error(),
+            'fatal'   => Severity::fatal(),
+            default   => Severity::error(),
         };
 
         $hub->withScope(function($scope) use ($hub, $message, $severity, $context): void {
@@ -88,20 +88,16 @@ final class SentryHelper
      *
      * @param array<string, mixed> $data Additional metadata for the breadcrumb
      */
-    public static function addBreadcrumb(
-        string $message,
-        string $category = 'custom',
-        string $level = 'info',
-        array $data = []
-    ): void {
+    public static function addBreadcrumb(string $message, string $category = 'custom', string $level = 'info', array $data = []): void
+    {
         $hub = self::getHub();
 
         $breadcrumbLevel = match ($level) {
-            'debug' => Breadcrumb::LEVEL_DEBUG,
+            'debug'   => Breadcrumb::LEVEL_DEBUG,
             'warning' => Breadcrumb::LEVEL_WARNING,
-            'error' => Breadcrumb::LEVEL_ERROR,
-            'fatal' => Breadcrumb::LEVEL_FATAL,
-            default => Breadcrumb::LEVEL_INFO,
+            'error'   => Breadcrumb::LEVEL_ERROR,
+            'fatal'   => Breadcrumb::LEVEL_FATAL,
+            default   => Breadcrumb::LEVEL_INFO,
         };
 
         $hub->addBreadcrumb(new Breadcrumb(
