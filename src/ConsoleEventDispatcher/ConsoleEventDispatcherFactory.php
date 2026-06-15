@@ -6,23 +6,23 @@ namespace Sirix\SentryPsr\ConsoleEventDispatcher;
 
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Sirix\ContainerResolver\ContainerResolver;
 use Sirix\SentryPsr\Listener\SentryCommandListener;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 final class ConsoleEventDispatcherFactory
 {
     /**
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function __invoke(ContainerInterface $container): EventDispatcher
     {
-        $dispatcher = new EventDispatcher();
+        $containerResolver   = ContainerResolver::forFactory($container, self::class);
+        $eventDispatcher     = new EventDispatcher();
 
-        $sentryListener = $container->get(SentryCommandListener::class);
-        $dispatcher->addSubscriber($sentryListener);
+        $eventDispatcher->addSubscriber($containerResolver->getAs(SentryCommandListener::class, EventSubscriberInterface::class));
 
-        return $dispatcher;
+        return $eventDispatcher;
     }
 }

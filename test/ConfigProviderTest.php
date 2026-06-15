@@ -11,10 +11,14 @@ use Sentry\State\HubInterface;
 use Sirix\SentryPsr\ConfigProvider;
 use Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory;
 use Sirix\SentryPsr\Hub\SentryHubFactory;
+use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
+use Sirix\SentryPsr\Lifecycle\SentryLifecycleFactory;
 use Sirix\SentryPsr\Listener\SentryCommandListener;
 use Sirix\SentryPsr\Listener\SentryCommandListenerFactory;
 use Sirix\SentryPsr\Middleware\SentryErrorMiddleware;
 use Sirix\SentryPsr\Middleware\SentryErrorMiddlewareFactory;
+use Sirix\SentryPsr\Reporter\SentryReporter;
+use Sirix\SentryPsr\Reporter\SentryReporterFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
@@ -40,6 +44,12 @@ final class ConfigProviderTest extends TestCase
         $this->assertArrayHasKey(HubInterface::class, $factories);
         $this->assertSame(SentryHubFactory::class, $factories[HubInterface::class]);
 
+        $this->assertArrayHasKey(SentryLifecycle::class, $factories);
+        $this->assertSame(SentryLifecycleFactory::class, $factories[SentryLifecycle::class]);
+
+        $this->assertArrayHasKey(SentryReporter::class, $factories);
+        $this->assertSame(SentryReporterFactory::class, $factories[SentryReporter::class]);
+
         $this->assertArrayHasKey(SentryErrorMiddleware::class, $factories);
         $this->assertSame(SentryErrorMiddlewareFactory::class, $factories[SentryErrorMiddleware::class]);
 
@@ -61,6 +71,13 @@ final class ConfigProviderTest extends TestCase
             $this->assertArrayHasKey(EventDispatcherInterface::class, $aliases);
             $this->assertSame(EventDispatcher::class, $aliases[EventDispatcherInterface::class]);
         }
+    }
+
+    public function testConfigProviderDoesNotShipRuntimeConfigDefaults(): void
+    {
+        $config = (new ConfigProvider())();
+
+        $this->assertArrayNotHasKey('sentry_psr', $config);
     }
 
     public function testConfigProviderWithoutCommandClass(): void

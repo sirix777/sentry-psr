@@ -6,31 +6,42 @@ namespace Sirix\SentryPsr\Hub;
 
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Sentry\ClientBuilder;
 use Sentry\SentrySdk;
+use Sentry\State\Hub;
 use Sentry\State\HubInterface;
+use Sirix\ContainerResolver\ConfigReader;
+use Sirix\ContainerResolver\ContainerResolver;
+use Sirix\SentryPsr\Config\SentryPsrConfig;
 
 use function array_key_exists;
-use function Sentry\init;
 
 class SentryHubFactory
 {
     /**
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function __invoke(ContainerInterface $container): HubInterface
     {
-        $config = $container->get('config')['sentry'] ?? [];
+        $containerResolver = ContainerResolver::forFactory($container, self::class);
+        $configReader      = ConfigReader::fromContainer($containerResolver);
+        SentryPsrConfig::assertConfigured($configReader);
 
-        // Avoid registering global error/exception handlers by default.
-        // This keeps test environments and embedding applications in control.
-        if (! array_key_exists('default_integrations', $config)) {
-            $config['default_integrations'] = false;
+        /** @var array<string, mixed> $sentryConfig */
+        $sentryConfig        = $configReader->array('sentry', []);
+        $defaultIntegrations = $configReader->requiredBool('sentry_psr.default_integrations');
+        $setCurrentHub       = $configReader->requiredBool('sentry_psr.set_current_hub');
+
+        if (! array_key_exists('default_integrations', $sentryConfig)) {
+            $sentryConfig['default_integrations'] = $defaultIntegrations;
         }
 
-        init($config);
+        $hub = new Hub(ClientBuilder::create($sentryConfig)->getClient());
 
-        return SentrySdk::getCurrentHub();
+        if ($setCurrentHub) {
+            SentrySdk::setCurrentHub($hub);
+        }
+
+        return $hub;
     }
 }

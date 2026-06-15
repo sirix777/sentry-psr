@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace Sirix\SentryPsr;
 
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Sentry\State\HubInterface;
 use Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory;
-use Sirix\SentryPsr\Helper\SentryHelper;
-use Sirix\SentryPsr\Helper\SentryHelperFactory;
 use Sirix\SentryPsr\Hub\SentryHubFactory;
+use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
+use Sirix\SentryPsr\Lifecycle\SentryLifecycleFactory;
 use Sirix\SentryPsr\Listener\SentryCommandListener;
 use Sirix\SentryPsr\Listener\SentryCommandListenerFactory;
 use Sirix\SentryPsr\Middleware\SentryErrorMiddleware;
 use Sirix\SentryPsr\Middleware\SentryErrorMiddlewareFactory;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Sirix\SentryPsr\Reporter\SentryReporter;
+use Sirix\SentryPsr\Reporter\SentryReporterFactory;
 
 use function class_exists;
+use function interface_exists;
 
 class ConfigProvider
 {
@@ -27,7 +27,7 @@ class ConfigProvider
      * To add a bit of a structure, each section is defined in a separate
      * method which returns an array with its configuration.
      *
-     * @return array<string, array<string, array<string, string>>>
+     * @return array<string, mixed>
      */
     public function __invoke(): array
     {
@@ -46,16 +46,14 @@ class ConfigProvider
     {
         $factories = [
             HubInterface::class          => SentryHubFactory::class,
+            SentryLifecycle::class       => SentryLifecycleFactory::class,
+            SentryReporter::class        => SentryReporterFactory::class,
             SentryErrorMiddleware::class => SentryErrorMiddlewareFactory::class,
-            SentryHelper::class          => SentryHelperFactory::class,
         ];
 
-        if (class_exists(Command::class)) {
-            $factories[SentryCommandListener::class] = SentryCommandListenerFactory::class;
-        }
-
-        if (class_exists(EventDispatcher::class)) {
-            $factories[EventDispatcher::class] = ConsoleEventDispatcherFactory::class;
+        if ($this->hasConsoleIntegration()) {
+            $factories[SentryCommandListener::class]                        = SentryCommandListenerFactory::class;
+            $factories['Symfony\Component\EventDispatcher\EventDispatcher'] = ConsoleEventDispatcherFactory::class;
         }
 
         return $factories;
@@ -66,13 +64,21 @@ class ConfigProvider
      */
     protected function getAliases(): array
     {
-        $aliases = [];
-
-        if (class_exists(EventDispatcher::class)) {
-            $aliases['Laminas\Cli\SymfonyEventDispatcher'] = EventDispatcher::class;
-            $aliases[EventDispatcherInterface::class]      = EventDispatcher::class;
+        if (! $this->hasConsoleIntegration()) {
+            return [];
         }
 
-        return $aliases;
+        return [
+            'Laminas\Cli\SymfonyEventDispatcher'           => 'Symfony\Component\EventDispatcher\EventDispatcher',
+            'Psr\EventDispatcher\EventDispatcherInterface' => 'Symfony\Component\EventDispatcher\EventDispatcher',
+        ];
+    }
+
+    protected function hasConsoleIntegration(): bool
+    {
+        return class_exists('Symfony\Component\Console\Command\Command')
+            && class_exists('Symfony\Component\Console\ConsoleEvents')
+            && interface_exists('Symfony\Component\EventDispatcher\EventSubscriberInterface')
+            && class_exists('Symfony\Component\EventDispatcher\EventDispatcher');
     }
 }
