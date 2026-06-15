@@ -42,9 +42,13 @@ class SentryCommandListener implements EventSubscriberInterface
         });
 
         $breadcrumb = new Breadcrumb(
-            'info',
-            'console',
-            'Console command started',
+            level: Breadcrumb::LEVEL_INFO,
+            type: Breadcrumb::TYPE_DEFAULT,
+            category: 'console',
+            message: 'Console command started',
+            metadata: [
+                'command' => $command?->getName(),
+            ],
         );
 
         $this->sentryHub->addBreadcrumb($breadcrumb);

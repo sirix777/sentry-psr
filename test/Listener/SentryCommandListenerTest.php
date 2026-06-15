@@ -69,7 +69,13 @@ final class SentryCommandListenerTest extends TestCase
         $this->hubMock
             ->expects(self::once())
             ->method('addBreadcrumb')
-            ->with(self::isInstanceOf(Breadcrumb::class))
+            ->with(self::callback(static function(Breadcrumb $breadcrumb): bool {
+                return Breadcrumb::LEVEL_INFO === $breadcrumb->getLevel()
+                    && Breadcrumb::TYPE_DEFAULT === $breadcrumb->getType()
+                    && 'console' === $breadcrumb->getCategory()
+                    && 'Console command started' === $breadcrumb->getMessage()
+                    && ['command' => 'test:cmd'] === $breadcrumb->getMetadata();
+            }))
         ;
 
         $this->loggerMock
