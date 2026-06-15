@@ -103,7 +103,7 @@ Invalid container services, missing `sentry_psr`, or invalid config value types 
 
 ### Console input redaction
 
-Console command arguments and options are redacted with `sirix/redaction` before they are attached to Sentry command context. By default, keys matching `password|passwd|secret|token|api[_-]?key|authorization|cookie` are replaced with `[Filtered]`, recursively and with traversal limits suitable for long-running workers.
+Console command arguments and options are redacted with a Sentry-specific `sirix/redaction` redactor configured from `sentry_psr.redaction` before they are attached to Sentry command context. By default, keys matching `password|passwd|secret|token|api[_-]?key|authorization|cookie` are replaced with `[Filtered]`, recursively and with traversal limits suitable for long-running workers.
 
 HTTP filtering is intentionally separate: request headers still use the `http_context` allowlist/blocklist model and are not controlled by console redaction settings. Raw query strings and request targets are not captured unless `sentry_psr.http_context.capture_query_string=true`.
 

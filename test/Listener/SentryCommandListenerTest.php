@@ -232,6 +232,7 @@ final class SentryCommandListenerTest extends TestCase
             ],
         ]);
         $input->method('getOptions')->willReturn([
+            'api-key'     => 'secret-key-option',
             'accessToken' => 'secret-token',
             'verbose'     => true,
         ]);
@@ -251,6 +252,7 @@ final class SentryCommandListenerTest extends TestCase
                             && '[Filtered]' === $context['arguments']['nested']['api-key']
                             && '[Filtered]' === $context['arguments']['nested']['refresh_token']
                             && 'sync' === $context['arguments']['nested']['mode']
+                            && '[Filtered]' === $context['options']['api-key']
                             && '[Filtered]' === $context['options']['accessToken']
                             && true === $context['options']['verbose'];
                     }))

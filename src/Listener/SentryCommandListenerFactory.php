@@ -9,7 +9,6 @@ use Psr\Container\ContainerInterface;
 use Sentry\State\HubInterface;
 use Sirix\ContainerResolver\ConfigReader;
 use Sirix\ContainerResolver\ContainerResolver;
-use Sirix\Redaction\RedactorInterface;
 use Sirix\SentryPsr\Config\SentryPsrConfig;
 use Sirix\SentryPsr\Helper\LoggerHelper;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
@@ -26,10 +25,6 @@ class SentryCommandListenerFactory
         $configReader      = ConfigReader::fromContainer($containerResolver);
         SentryPsrConfig::assertConfigured($configReader);
 
-        $redactor = $containerResolver->has(RedactorInterface::class)
-            ? $containerResolver->get(RedactorInterface::class)
-            : (new SentryRedactorFactory())($container);
-
         return new SentryCommandListener(
             $containerResolver->get(HubInterface::class),
             isolateScope: $configReader->requiredBool('sentry_psr.isolate_console_scope'),
@@ -38,7 +33,7 @@ class SentryCommandListenerFactory
             logConsoleCommandStart: $configReader->requiredBool('sentry_psr.log_console_command_start'),
             logger: LoggerHelper::getLogger($containerResolver),
             sentryLifecycle: $containerResolver->get(SentryLifecycle::class),
-            redactor: $redactor,
+            redactor: (new SentryRedactorFactory())($container),
         );
     }
 }

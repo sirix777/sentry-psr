@@ -10,14 +10,12 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Sentry\State\HubInterface;
-use Sirix\ContainerResolver\Exception\InvalidContainerServiceException;
 use Sirix\Redaction\RedactorInterface;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 use Sirix\SentryPsr\Listener\SentryCommandListener;
 use Sirix\SentryPsr\Listener\SentryCommandListenerFactory;
 use Sirix\SentryPsr\Test\Config\SentryPsrConfigFixture;
 use Sirix\SentryPsr\Test\Container\InMemoryContainer;
-use stdClass;
 
 /**
  * @internal
@@ -138,29 +136,28 @@ final class SentryCommandListenerFactoryTest extends TestCase
         ]));
     }
 
-    public function testFactoryUsesRedactorServiceWhenAvailable(): void
+    public function testFactoryIgnoresGenericRedactorService(): void
     {
-        $redactor = $this->createMock(RedactorInterface::class);
+        $genericRedactor = $this->createMock(RedactorInterface::class);
 
         $listener = $this->factory->__invoke(new InMemoryContainer([
             HubInterface::class      => $this->hubMock,
             SentryLifecycle::class   => $this->lifecycle,
-            RedactorInterface::class => $redactor,
+            RedactorInterface::class => $genericRedactor,
             'config'                 => SentryPsrConfigFixture::config(),
         ]));
 
-        $this->assertSame($redactor, (new ReflectionProperty($listener, 'redactor'))->getValue($listener));
-    }
-
-    public function testFactoryRejectsInvalidRedactorService(): void
-    {
-        $this->expectException(InvalidContainerServiceException::class);
-
-        $this->factory->__invoke(new InMemoryContainer([
-            HubInterface::class      => $this->hubMock,
-            SentryLifecycle::class   => $this->lifecycle,
-            RedactorInterface::class => new stdClass(),
-            'config'                 => SentryPsrConfigFixture::config(),
+        $redactor = (new ReflectionProperty($listener, 'redactor'))->getValue($listener);
+        $this->assertNotSame($genericRedactor, $redactor);
+        $this->assertInstanceOf(RedactorInterface::class, $redactor);
+        $this->assertSame([
+            'api-key'       => '[Filtered]',
+            'refresh-token' => '[Filtered]',
+            'mode'          => 'smoke',
+        ], $redactor->redact([
+            'api-key'       => 'fake-api-key-should-not-appear-in-sentry',
+            'refresh-token' => 'fake-refresh-token-should-not-appear-in-sentry',
+            'mode'          => 'smoke',
         ]));
     }
 }

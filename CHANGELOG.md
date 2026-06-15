@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Console command breadcrumbs and lifecycle no longer leak across sequential commands.
+- Console input redaction now always uses `sentry_psr.redaction`, avoiding accidental use of unrelated application-wide `RedactorInterface` services.
 
 ## [1.2.1] - 2026-06-15
 ### Fixed
