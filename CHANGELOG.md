@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.0] - Unreleased
 ### Added
 - Added `sentry_psr` package-level configuration for scope isolation, global hub behavior, flush behavior and context enrichment.
+- Added `sentry_psr.log_console_command_start` to disable PSR-3 info logs for command start events while keeping breadcrumbs enabled.
 - Added `SentryLifecycle` as the central API for isolated scopes and safe client flush.
 - Added `SentryReporter` as the recommended injectable helper/reporter service.
 - Added HTTP request context enrichment with privacy-safe header filtering.

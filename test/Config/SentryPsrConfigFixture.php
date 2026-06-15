@@ -35,6 +35,7 @@ final readonly class SentryPsrConfigFixture
             'flush_timeout'                => 2,
             'capture_http_request_context' => true,
             'capture_console_input'        => true,
+            'log_console_command_start'    => true,
             'redaction'                    => [
                 'replacement'             => '[Filtered]',
                 'sensitive_key_pattern'   => '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',

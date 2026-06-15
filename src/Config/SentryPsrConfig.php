@@ -31,6 +31,7 @@ final readonly class SentryPsrConfig
             'flush_on_console_terminate',
             'capture_http_request_context',
             'capture_console_input',
+            'log_console_command_start',
         ] as $key) {
             $configReader->requiredBool('sentry_psr.' . $key);
         }

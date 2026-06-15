@@ -154,6 +154,30 @@ final class SentryCommandListenerTest extends TestCase
         $listener->onConsoleError($event);
     }
 
+    public function testCanDisableConsoleCommandStartedInfoLog(): void
+    {
+        $command = new Command('quiet:cmd');
+        $input   = new ArrayInput([]);
+        $event   = new ConsoleCommandEvent($command, $input, new NullOutput());
+
+        $this->hubMock
+            ->expects($this->once())
+            ->method('configureScope')
+        ;
+        $this->hubMock
+            ->expects($this->once())
+            ->method('addBreadcrumb')
+        ;
+        $this->loggerMock->expects($this->never())->method('info');
+
+        (new SentryCommandListener(
+            $this->hubMock,
+            isolateScope: false,
+            logConsoleCommandStart: false,
+            logger: $this->loggerMock,
+        ))->onConsoleCommand($event);
+    }
+
     public function testWorksWithoutLogger(): void
     {
         $listener = new SentryCommandListener($this->hubMock);

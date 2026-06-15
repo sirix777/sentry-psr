@@ -26,6 +26,7 @@ class SentryCommandListener implements EventSubscriberInterface
         private readonly bool $isolateScope = true,
         private readonly bool $flushOnTerminate = true,
         private readonly bool $captureConsoleInput = true,
+        private readonly bool $logConsoleCommandStart = true,
         private readonly ?LoggerInterface $logger = null,
         private readonly ?SentryLifecycle $sentryLifecycle = null,
         private readonly ?RedactorInterface $redactor = null,
@@ -50,9 +51,11 @@ class SentryCommandListener implements EventSubscriberInterface
         $this->configureCommandScope($consoleCommandEvent);
         $this->addCommandBreadcrumb($consoleCommandEvent);
 
-        $this->logger?->info('Console command started', [
-            'command' => $consoleCommandEvent->getCommand()?->getName(),
-        ]);
+        if ($this->logConsoleCommandStart) {
+            $this->logger?->info('Console command started', [
+                'command' => $consoleCommandEvent->getCommand()?->getName(),
+            ]);
+        }
     }
 
     public function onConsoleError(ConsoleErrorEvent $consoleErrorEvent): void

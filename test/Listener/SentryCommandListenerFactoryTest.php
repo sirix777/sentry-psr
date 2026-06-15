@@ -104,12 +104,14 @@ final class SentryCommandListenerFactoryTest extends TestCase
                 'isolate_console_scope'      => false,
                 'flush_on_console_terminate' => false,
                 'capture_console_input'      => false,
+                'log_console_command_start'  => false,
             ]),
         ]));
 
         $this->assertFalse((new ReflectionProperty($listener, 'isolateScope'))->getValue($listener));
         $this->assertFalse((new ReflectionProperty($listener, 'flushOnTerminate'))->getValue($listener));
         $this->assertFalse((new ReflectionProperty($listener, 'captureConsoleInput'))->getValue($listener));
+        $this->assertFalse((new ReflectionProperty($listener, 'logConsoleCommandStart'))->getValue($listener));
     }
 
     public function testFactoryUsesConfiguredDefaultRedactor(): void

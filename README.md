@@ -57,6 +57,7 @@ return [
         'flush_timeout' => 2,
         'capture_http_request_context' => true,
         'capture_console_input' => true,
+        'log_console_command_start' => true,
         'redaction' => [
             'replacement' => '[Filtered]',
             'sensitive_key_pattern' => '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
@@ -237,6 +238,8 @@ composer require symfony/console symfony/event-dispatcher
 - `ConsoleEvents::COMMAND` — push command-local scope, set command context and add breadcrumb;
 - `ConsoleEvents::ERROR` — capture command exception in the active command scope;
 - `ConsoleEvents::TERMINATE` — flush if configured and pop command scope.
+
+Set `sentry_psr.log_console_command_start=false` to disable the PSR-3 `Console command started` info log while keeping command breadcrumbs and error reporting enabled.
 
 Manual wiring:
 
