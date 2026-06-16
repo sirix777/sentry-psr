@@ -8,12 +8,32 @@ use Sirix\ContainerResolver\ConfigReader;
 use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
 use Sirix\ContainerResolver\Exception\MissingConfigValueException;
 
+use function array_key_exists;
+use function in_array;
+use function is_array;
+use function is_int;
+use function is_string;
 use function preg_match;
 use function restore_error_handler;
 use function set_error_handler;
 
 final readonly class SentryPsrConfig
 {
+    /**
+     * @var non-empty-list<string>
+     */
+    private const REDACTION_RULE_TYPES = [
+        'fixed_value',
+        'full_mask',
+        'start_end',
+        'unicode_start_end',
+        'email',
+        'phone',
+        'name',
+        'null',
+        'offset',
+    ];
+
     /**
      * @throws MissingConfigValueException
      * @throws InvalidConfigValueException
@@ -47,6 +67,9 @@ final readonly class SentryPsrConfig
         self::requiredNonNegativeInt($configReader, 'sentry_psr.redaction.max_depth');
         self::requiredNonNegativeInt($configReader, 'sentry_psr.redaction.max_items_per_container');
         self::requiredNonNegativeInt($configReader, 'sentry_psr.redaction.max_total_nodes');
+        $configReader->requiredBool('sentry_psr.redaction.use_default_rules');
+        self::assertRuleMap('sentry_psr.redaction.rules', $configReader->requiredMap('sentry_psr.redaction.rules'));
+        self::assertRegexRules('sentry_psr.redaction.regex_rules', $configReader->requiredList('sentry_psr.redaction.regex_rules'));
 
         $configReader->requiredArray('sentry_psr.http_context');
         $configReader->requiredBool('sentry_psr.http_context.enabled');
@@ -70,6 +93,119 @@ final readonly class SentryPsrConfig
         }
 
         return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $rules
+     *
+     * @throws InvalidConfigValueException
+     */
+    private static function assertRuleMap(string $path, array $rules): void
+    {
+        foreach ($rules as $key => $ruleConfig) {
+            self::assertRuleConfig($path . '.' . $key, $ruleConfig);
+        }
+    }
+
+    /**
+     * @param list<mixed> $regexRules
+     *
+     * @throws InvalidConfigValueException
+     */
+    private static function assertRegexRules(string $path, array $regexRules): void
+    {
+        foreach ($regexRules as $index => $regexRuleConfig) {
+            $itemPath = $path . '.' . $index;
+            if (! is_array($regexRuleConfig)) {
+                throw InvalidConfigValueException::forType($itemPath, 'array', $regexRuleConfig, self::class);
+            }
+
+            if (! array_key_exists('pattern', $regexRuleConfig) || ! is_string($regexRuleConfig['pattern'])) {
+                throw InvalidConfigValueException::forType($itemPath . '.pattern', 'string', $regexRuleConfig['pattern'] ?? null, self::class);
+            }
+
+            self::assertRegexPattern($itemPath . '.pattern', $regexRuleConfig['pattern']);
+
+            if (! array_key_exists('rule', $regexRuleConfig)) {
+                throw InvalidConfigValueException::forType($itemPath . '.rule', 'array', null, self::class);
+            }
+
+            self::assertRuleConfig($itemPath . '.rule', $regexRuleConfig['rule']);
+        }
+    }
+
+    /**
+     * @throws InvalidConfigValueException
+     */
+    private static function assertRuleConfig(string $path, mixed $ruleConfig): void
+    {
+        if (! is_array($ruleConfig)) {
+            throw InvalidConfigValueException::forType($path, 'array', $ruleConfig, self::class);
+        }
+
+        if (! array_key_exists('type', $ruleConfig) || ! is_string($ruleConfig['type'])) {
+            throw InvalidConfigValueException::forType($path . '.type', 'string', $ruleConfig['type'] ?? null, self::class);
+        }
+
+        if (! in_array($ruleConfig['type'], self::REDACTION_RULE_TYPES, true)) {
+            throw InvalidConfigValueException::forAllowedValues($path . '.type', self::REDACTION_RULE_TYPES, $ruleConfig['type'], self::class);
+        }
+
+        match ($ruleConfig['type']) {
+            'fixed_value'                    => self::assertRuleString($path, $ruleConfig, 'value'),
+            'start_end', 'unicode_start_end' => self::assertStartEndRule($path, $ruleConfig),
+            'offset'                         => self::assertRuleInt($path, $ruleConfig, 'offset'),
+            default                          => null,
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $ruleConfig
+     *
+     * @throws InvalidConfigValueException
+     */
+    private static function assertStartEndRule(string $path, array $ruleConfig): void
+    {
+        self::assertRuleNonNegativeInt($path, $ruleConfig, 'start');
+        self::assertRuleNonNegativeInt($path, $ruleConfig, 'end');
+    }
+
+    /**
+     * @param array<string, mixed> $ruleConfig
+     *
+     * @throws InvalidConfigValueException
+     */
+    private static function assertRuleString(string $path, array $ruleConfig, string $key): void
+    {
+        if (! array_key_exists($key, $ruleConfig) || ! is_string($ruleConfig[$key])) {
+            throw InvalidConfigValueException::forType($path . '.' . $key, 'string', $ruleConfig[$key] ?? null, self::class);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $ruleConfig
+     *
+     * @throws InvalidConfigValueException
+     */
+    private static function assertRuleInt(string $path, array $ruleConfig, string $key): void
+    {
+        if (! array_key_exists($key, $ruleConfig) || ! is_int($ruleConfig[$key])) {
+            throw InvalidConfigValueException::forType($path . '.' . $key, 'int', $ruleConfig[$key] ?? null, self::class);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $ruleConfig
+     *
+     * @throws InvalidConfigValueException
+     */
+    private static function assertRuleNonNegativeInt(string $path, array $ruleConfig, string $key): void
+    {
+        self::assertRuleInt($path, $ruleConfig, $key);
+
+        if ($ruleConfig[$key] < 0) {
+            throw InvalidConfigValueException::forType($path . '.' . $key, 'int >= 0', $ruleConfig[$key], self::class);
+        }
     }
 
     /**

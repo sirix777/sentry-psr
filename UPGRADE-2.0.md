@@ -70,6 +70,9 @@ return [
             'max_depth' => 8,
             'max_items_per_container' => 100,
             'max_total_nodes' => 5000,
+            'use_default_rules' => false,
+            'rules' => [],
+            'regex_rules' => [],
         ],
         'http_context' => [
             'enabled' => true,
@@ -99,6 +102,8 @@ return [
     ],
 ];
 ```
+
+Console input redaction is configured through `sentry_psr.redaction` and uses a Sentry-specific `sirix/redaction` redactor instance. The listener does not reuse a generic application-wide `Sirix\Redaction\RedactorInterface` service if one is present in the container. Use `rules` and `regex_rules` under `sentry_psr.redaction` for additional exact-key or regex-key filters.
 
 Missing `sentry_psr` or missing required keys fail during factory creation with `sirix/container-resolver` config exceptions. `default_integrations=false` remains the safe default. Enable it explicitly if you want standard Sentry SDK global handlers/integrations.
 

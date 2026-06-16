@@ -41,6 +41,52 @@ final class SentryRedactorFactoryTest extends TestCase
         ]));
     }
 
+    public function testCreatesRedactorWithAdditionalRules(): void
+    {
+        $redactor = (new SentryRedactorFactory())->__invoke(new InMemoryContainer([
+            'config' => SentryPsrConfigFixture::config([
+                'redaction' => [
+                    'replacement' => '*',
+                    'rules'       => [
+                        'email'       => [
+                            'type' => 'email',
+                        ],
+                        'card_number' => [
+                            'type'  => 'start_end',
+                            'start' => 6,
+                            'end'   => 4,
+                        ],
+                        'phone'       => [
+                            'type' => 'phone',
+                        ],
+                    ],
+                    'regex_rules' => [
+                        [
+                            'pattern' => '/customer[_-]?name/i',
+                            'rule'    => [
+                                'type' => 'name',
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ]));
+
+        $this->assertSame([
+            'email'         => 'joh****@example.com',
+            'card_number'   => '411111******1111',
+            'phone'         => '+3712****00',
+            'customer_name' => 'Jo***n Do***e',
+            'api-key'       => '*',
+        ], $redactor->redact([
+            'email'         => 'john.doe@example.com',
+            'card_number'   => '4111111111111111',
+            'phone'         => '+37126000000',
+            'customer_name' => 'John Doe',
+            'api-key'       => 'secret-api-key',
+        ]));
+    }
+
     public function testCreatesRedactorFromSentryPsrConfiguration(): void
     {
         $redactor = (new SentryRedactorFactory())->__invoke(new InMemoryContainer([

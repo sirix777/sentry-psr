@@ -71,6 +71,55 @@ final class SentryPsrConfigTest extends TestCase
         ])));
     }
 
+    public function testThrowsWhenRedactionRuleTypeIsInvalid(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'redaction' => [
+                'rules' => [
+                    'email' => [
+                        'type' => 'unknown',
+                    ],
+                ],
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenRegexRedactionRulePatternIsInvalid(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'redaction' => [
+                'regex_rules' => [
+                    [
+                        'pattern' => '(',
+                        'rule'    => [
+                            'type' => 'email',
+                        ],
+                    ],
+                ],
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenStartEndRedactionRuleIsMissingRequiredInteger(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'redaction' => [
+                'rules' => [
+                    'card_number' => [
+                        'type'  => 'start_end',
+                        'start' => 6,
+                    ],
+                ],
+            ],
+        ])));
+    }
+
     /**
      * @param array<string, mixed> $config
      */

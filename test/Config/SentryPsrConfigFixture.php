@@ -42,6 +42,9 @@ final readonly class SentryPsrConfigFixture
                 'max_depth'               => 8,
                 'max_items_per_container' => 100,
                 'max_total_nodes'         => 5000,
+                'use_default_rules'       => false,
+                'rules'                   => [],
+                'regex_rules'             => [],
             ],
             'http_context'                 => [
                 'enabled'               => true,

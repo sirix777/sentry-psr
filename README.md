@@ -64,6 +64,9 @@ return [
             'max_depth' => 8,
             'max_items_per_container' => 100,
             'max_total_nodes' => 5000,
+            'use_default_rules' => false,
+            'rules' => [],
+            'regex_rules' => [],
         ],
         'http_context' => [
             'enabled' => true,
@@ -103,7 +106,33 @@ Invalid container services, missing `sentry_psr`, or invalid config value types 
 
 ### Console input redaction
 
-Console command arguments and options are redacted with a Sentry-specific `sirix/redaction` redactor configured from `sentry_psr.redaction` before they are attached to Sentry command context. By default, keys matching `password|passwd|secret|token|api[_-]?key|authorization|cookie` are replaced with `[Filtered]`, recursively and with traversal limits suitable for long-running workers.
+Console command arguments and options are redacted with a Sentry-specific `sirix/redaction` redactor configured from `sentry_psr.redaction` before they are attached to Sentry command context. The listener intentionally does not reuse an application-wide `Sirix\Redaction\RedactorInterface` service, so Sentry console sanitization remains isolated and predictable.
+
+By default, keys matching `password|passwd|secret|token|api[_-]?key|authorization|cookie` are replaced with `[Filtered]`, recursively and with traversal limits suitable for long-running workers. You can opt in to additional exact-key and regex-key redaction rules:
+
+```php
+'redaction' => [
+    'replacement' => '*',
+    'sensitive_key_pattern' => '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
+    'max_depth' => 8,
+    'max_items_per_container' => 100,
+    'max_total_nodes' => 5000,
+    'use_default_rules' => false,
+    'rules' => [
+        'email' => ['type' => 'email'],
+        'phone' => ['type' => 'phone'],
+        'card_number' => ['type' => 'start_end', 'start' => 6, 'end' => 4],
+    ],
+    'regex_rules' => [
+        [
+            'pattern' => '/customer[_-]?name/i',
+            'rule' => ['type' => 'name'],
+        ],
+    ],
+],
+```
+
+Supported rule types are `fixed_value`, `full_mask`, `start_end`, `unicode_start_end`, `email`, `phone`, `name`, `null` and `offset`. `use_default_rules=false` is the baseline because the default `sirix/redaction` rules are intentionally broad and may hide more Sentry context than expected.
 
 HTTP filtering is intentionally separate: request headers still use the `http_context` allowlist/blocklist model and are not controlled by console redaction settings. Raw query strings and request targets are not captured unless `sentry_psr.http_context.capture_query_string=true`.
 
