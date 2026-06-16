@@ -7,12 +7,13 @@ namespace Sirix\SentryPsr\Test\Hub;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Sentry\SentrySdk;
 use Sentry\State\Hub;
 use Sentry\State\HubInterface;
+use Sirix\ContainerResolver\Exception\MissingConfigValueException;
 use Sirix\SentryPsr\Hub\SentryHubFactory;
+use Sirix\SentryPsr\Test\Config\SentryPsrConfigFixture;
+use Sirix\SentryPsr\Test\Container\InMemoryContainer;
 
 /**
  * @internal
@@ -20,28 +21,25 @@ use Sirix\SentryPsr\Hub\SentryHubFactory;
 #[CoversClass(SentryHubFactory::class)]
 final class SentryHubFactoryTest extends TestCase
 {
-    private ContainerInterface $containerMock;
     private SentryHubFactory $factory;
 
     public function setUp(): void
     {
         parent::setUp();
 
-        $this->containerMock = $this->createMock(ContainerInterface::class);
-        $this->factory       = new SentryHubFactory();
+        $this->factory = new SentryHubFactory();
 
         SentrySdk::setCurrentHub(new Hub());
     }
 
     /**
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function testCreatesHubWithEmptyConfig(): void
     {
-        $this->containerMock->method('get')->with('config')->willReturn([]);
-
-        $hub = $this->factory->__invoke($this->containerMock);
+        $hub = $this->factory->__invoke(new InMemoryContainer([
+            'config' => SentryPsrConfigFixture::config(),
+        ]));
 
         $this->assertInstanceOf(HubInterface::class, $hub);
         $this->assertSame($hub, SentrySdk::getCurrentHub());
@@ -49,20 +47,20 @@ final class SentryHubFactoryTest extends TestCase
 
     /**
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function testCreatesHubWithCustomConfig(): void
     {
         $dsn = 'https://examplePublicKey@o0.ingest.sentry.io/0';
 
-        $this->containerMock->method('get')->with('config')->willReturn([
-            'sentry' => [
-                'dsn'         => $dsn,
-                'environment' => 'test',
+        $hub = $this->factory->__invoke(new InMemoryContainer([
+            'config' => [
+                'sentry' => [
+                    'dsn'         => $dsn,
+                    'environment' => 'test',
+                ],
+                ...SentryPsrConfigFixture::config(),
             ],
-        ]);
-
-        $hub = $this->factory->__invoke($this->containerMock);
+        ]));
 
         $this->assertInstanceOf(HubInterface::class, $hub);
         $this->assertSame($hub, SentrySdk::getCurrentHub());
@@ -70,18 +68,18 @@ final class SentryHubFactoryTest extends TestCase
 
     /**
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function testCreatesHubWithEmptyDsnConfig(): void
     {
-        $this->containerMock->method('get')->with('config')->willReturn([
-            'sentry' => [
-                'dsn'         => null,
-                'environment' => 'test',
+        $hub = $this->factory->__invoke(new InMemoryContainer([
+            'config' => [
+                'sentry' => [
+                    'dsn'         => null,
+                    'environment' => 'test',
+                ],
+                ...SentryPsrConfigFixture::config(),
             ],
-        ]);
-
-        $hub = $this->factory->__invoke($this->containerMock);
+        ]));
 
         $this->assertInstanceOf(HubInterface::class, $hub);
         $this->assertSame($hub, SentrySdk::getCurrentHub());
@@ -90,14 +88,44 @@ final class SentryHubFactoryTest extends TestCase
     /**
      * @throws ContainerExceptionInterface
      */
-    public function testThrowsIfConfigNotFound(): void
+    public function testThrowsWhenSentryPsrConfigIsMissing(): void
     {
-        $this->expectException(NotFoundExceptionInterface::class);
+        $this->expectException(MissingConfigValueException::class);
 
-        $this->containerMock->method('get')->willThrowException(
-            $this->createMock(NotFoundExceptionInterface::class)
-        );
+        $this->factory->__invoke(new InMemoryContainer());
+    }
 
-        $this->factory->__invoke($this->containerMock);
+    /**
+     * @throws ContainerExceptionInterface
+     */
+    public function testFactoryCanCreateHubWithoutSettingGlobalCurrentHub(): void
+    {
+        $previousHub = SentrySdk::getCurrentHub();
+
+        $hub = $this->factory->__invoke(new InMemoryContainer([
+            'config' => SentryPsrConfigFixture::config([
+                'set_current_hub' => false,
+            ]),
+        ]));
+
+        $this->assertInstanceOf(HubInterface::class, $hub);
+        $this->assertNotSame($hub, $previousHub);
+        $this->assertSame($previousHub, SentrySdk::getCurrentHub());
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     */
+    public function testRepeatedFactoryCallsCreateIndependentHubs(): void
+    {
+        $firstHub = $this->factory->__invoke(new InMemoryContainer([
+            'config' => SentryPsrConfigFixture::config(),
+        ]));
+        $secondHub = $this->factory->__invoke(new InMemoryContainer([
+            'config' => SentryPsrConfigFixture::config(),
+        ]));
+
+        $this->assertNotSame($firstHub, $secondHub);
+        $this->assertSame($secondHub, SentrySdk::getCurrentHub());
     }
 }

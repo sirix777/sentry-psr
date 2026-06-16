@@ -7,15 +7,15 @@ namespace Sirix\SentryPsr\Test\Listener;
 use Monolog\Logger;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
-use ReflectionException;
 use ReflectionProperty;
 use Sentry\State\HubInterface;
+use Sirix\Redaction\RedactorInterface;
+use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 use Sirix\SentryPsr\Listener\SentryCommandListener;
 use Sirix\SentryPsr\Listener\SentryCommandListenerFactory;
+use Sirix\SentryPsr\Test\Config\SentryPsrConfigFixture;
+use Sirix\SentryPsr\Test\Container\InMemoryContainer;
 
 /**
  * @internal
@@ -24,108 +24,140 @@ use Sirix\SentryPsr\Listener\SentryCommandListenerFactory;
 final class SentryCommandListenerFactoryTest extends TestCase
 {
     private HubInterface $hubMock;
-    private ContainerInterface $containerMock;
+    private SentryLifecycle $lifecycle;
     private SentryCommandListenerFactory $factory;
 
     public function setUp(): void
     {
         parent::setUp();
 
-        $this->hubMock       = $this->createMock(HubInterface::class);
-        $this->containerMock = $this->createMock(ContainerInterface::class);
-        $this->factory       = new SentryCommandListenerFactory();
+        $this->hubMock   = $this->createMock(HubInterface::class);
+        $this->lifecycle = new SentryLifecycle($this->hubMock);
+        $this->factory   = new SentryCommandListenerFactory();
     }
 
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
     public function testCreatesListenerWithoutLogger(): void
     {
-        $this->containerMock->method('get')->willReturnMap([
-            [HubInterface::class, $this->hubMock],
-        ]);
-        $this->containerMock->method('has')->willReturn(false);
-
-        $listener = $this->factory->__invoke($this->containerMock);
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            'config'               => SentryPsrConfigFixture::config(),
+        ]));
 
         $this->assertInstanceOf(SentryCommandListener::class, $listener);
         $this->assertNull((new ReflectionProperty($listener, 'logger'))->getValue($listener));
     }
 
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
     public function testCreatesListenerWithPsrLogger(): void
     {
         $logger = $this->createMock(LoggerInterface::class);
 
-        $this->containerMock->method('get')->willReturnMap([
-            [HubInterface::class, $this->hubMock],
-            [LoggerInterface::class, $logger],
-        ]);
-        $this->containerMock->method('has')->willReturnMap([
-            [LoggerInterface::class, true],
-            [Logger::class, false],
-            ['logger', false],
-        ]);
-
-        $listener = $this->factory->__invoke($this->containerMock);
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            LoggerInterface::class => $logger,
+            'config'               => SentryPsrConfigFixture::config(),
+        ]));
 
         $this->assertInstanceOf(SentryCommandListener::class, $listener);
         $this->assertSame($logger, (new ReflectionProperty($listener, 'logger'))->getValue($listener));
     }
 
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws ReflectionException
-     * @throws NotFoundExceptionInterface
-     */
     public function testCreatesListenerWithMonologLogger(): void
     {
         $logger = $this->createMock(Logger::class);
 
-        $this->containerMock->method('get')->willReturnMap([
-            [HubInterface::class, $this->hubMock],
-            [Logger::class, $logger],
-        ]);
-        $this->containerMock->method('has')->willReturnMap([
-            [LoggerInterface::class, false],
-            [Logger::class, true],
-            ['logger', false],
-        ]);
-
-        $listener = $this->factory->__invoke($this->containerMock);
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            'Monolog\Logger'       => $logger,
+            'config'               => SentryPsrConfigFixture::config(),
+        ]));
 
         $this->assertInstanceOf(SentryCommandListener::class, $listener);
         $this->assertSame($logger, (new ReflectionProperty($listener, 'logger'))->getValue($listener));
     }
 
-    /**
-     * @throws ReflectionException
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     */
     public function testCreatesListenerWithLoggerAlias(): void
     {
         $logger = $this->createMock(Logger::class);
 
-        $this->containerMock->method('get')->willReturnMap([
-            [HubInterface::class, $this->hubMock],
-            ['logger', $logger],
-        ]);
-        $this->containerMock->method('has')->willReturnMap([
-            [LoggerInterface::class, false],
-            [Logger::class, false],
-            ['logger', true],
-        ]);
-
-        $listener = $this->factory->__invoke($this->containerMock);
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            'logger'               => $logger,
+            'config'               => SentryPsrConfigFixture::config(),
+        ]));
 
         $this->assertInstanceOf(SentryCommandListener::class, $listener);
         $this->assertSame($logger, (new ReflectionProperty($listener, 'logger'))->getValue($listener));
+    }
+
+    public function testFactoryAppliesConsoleConfigurationFlags(): void
+    {
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            'config'               => SentryPsrConfigFixture::config([
+                'isolate_console_scope'      => false,
+                'flush_on_console_terminate' => false,
+                'capture_console_input'      => false,
+                'log_console_command_start'  => false,
+            ]),
+        ]));
+
+        $this->assertFalse((new ReflectionProperty($listener, 'isolateScope'))->getValue($listener));
+        $this->assertFalse((new ReflectionProperty($listener, 'flushOnTerminate'))->getValue($listener));
+        $this->assertFalse((new ReflectionProperty($listener, 'captureConsoleInput'))->getValue($listener));
+        $this->assertFalse((new ReflectionProperty($listener, 'logConsoleCommandStart'))->getValue($listener));
+    }
+
+    public function testFactoryUsesConfiguredDefaultRedactor(): void
+    {
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            'config'               => SentryPsrConfigFixture::config([
+                'redaction' => [
+                    'replacement'           => '[Redacted]',
+                    'sensitive_key_pattern' => '/secret/i',
+                ],
+            ]),
+        ]));
+
+        $redactor = (new ReflectionProperty($listener, 'redactor'))->getValue($listener);
+        $this->assertInstanceOf(RedactorInterface::class, $redactor);
+        $this->assertSame([
+            'clientSecret' => '[Redacted]',
+            'password'     => 'visible-with-custom-pattern',
+        ], $redactor->redact([
+            'clientSecret' => 'secret-value',
+            'password'     => 'visible-with-custom-pattern',
+        ]));
+    }
+
+    public function testFactoryIgnoresGenericRedactorService(): void
+    {
+        $genericRedactor = $this->createMock(RedactorInterface::class);
+
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class      => $this->hubMock,
+            SentryLifecycle::class   => $this->lifecycle,
+            RedactorInterface::class => $genericRedactor,
+            'config'                 => SentryPsrConfigFixture::config(),
+        ]));
+
+        $redactor = (new ReflectionProperty($listener, 'redactor'))->getValue($listener);
+        $this->assertNotSame($genericRedactor, $redactor);
+        $this->assertInstanceOf(RedactorInterface::class, $redactor);
+        $this->assertSame([
+            'api-key'       => '[Filtered]',
+            'refresh-token' => '[Filtered]',
+            'mode'          => 'smoke',
+        ], $redactor->redact([
+            'api-key'       => 'fake-api-key-should-not-appear-in-sentry',
+            'refresh-token' => 'fake-refresh-token-should-not-appear-in-sentry',
+            'mode'          => 'smoke',
+        ]));
     }
 }

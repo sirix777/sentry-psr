@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-06-16
+### Added
+- Added `sentry_psr` package-level configuration for scope isolation, global hub behavior, flush behavior and context enrichment.
+- Added `sentry_psr.log_console_command_start` to disable PSR-3 info logs for command start events while keeping breadcrumbs enabled.
+- Added exact-key and regex-key console redaction rules powered by `sirix/redaction` under `sentry_psr.redaction`.
+- Added `SentryLifecycle` as the central API for isolated scopes and safe client flush.
+- Added `SentryReporter` as the recommended injectable helper/reporter service.
+- Added HTTP request context enrichment with privacy-safe header filtering.
+- Added `UPGRADE-2.0.md` with migration guidance for breaking changes.
+
+### Changed
+- HTTP requests are isolated in a Sentry scope by default for long-running workers.
+- Console commands now push a command-local scope on `COMMAND` and pop it on `TERMINATE`.
+- `SentryHubFactory` creates explicit `Hub` instances via `ClientBuilder` and only sets the global current hub when configured.
+- Factories now use `sirix/container-resolver` for strict PSR-11 service and config resolution.
+- `psr/log` is a core dependency for logger type safety, while concrete logger implementations and Symfony console/event-dispatcher integrations remain optional.
+- GitHub Actions and local quality gates include dependency analysis with targeted optional-integration ignores.
+
+### Removed
+- Removed legacy static `SentryHelper` and `SentryHelperFactory`; use `SentryReporter` through DI instead.
+
+### Fixed
+- Console command breadcrumbs and lifecycle no longer leak across sequential commands.
+- Console input redaction now always uses `sentry_psr.redaction`, avoiding accidental use of unrelated application-wide `RedactorInterface` services.
+
 ## [1.2.1] - 2026-06-15
 ### Fixed
 - Fixed Symfony Console command breadcrumbs so the Sentry breadcrumb now uses the correct `console` category and `Console command started` message.

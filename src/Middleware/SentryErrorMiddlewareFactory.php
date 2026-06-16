@@ -6,25 +6,36 @@ namespace Sirix\SentryPsr\Middleware;
 
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
 use Sentry\State\HubInterface;
+use Sirix\ContainerResolver\ConfigReader;
+use Sirix\ContainerResolver\ContainerResolver;
+use Sirix\SentryPsr\Config\SentryPsrConfig;
 use Sirix\SentryPsr\Helper\LoggerHelper;
+use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 
 class SentryErrorMiddlewareFactory
 {
     /**
      * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
      */
     public function __invoke(ContainerInterface $container): SentryErrorMiddleware
     {
-        $sentryHub = $container->get(HubInterface::class);
+        $containerResolver = ContainerResolver::forFactory($container, self::class);
+        $configReader      = ConfigReader::fromContainer($containerResolver);
+        SentryPsrConfig::assertConfigured($configReader);
 
-        $logger = LoggerHelper::getLogger($container);
+        /** @var array<string, mixed> $httpContext */
+        $httpContext = $configReader->requiredArray('sentry_psr.http_context');
 
         return new SentryErrorMiddleware(
-            $sentryHub,
-            $logger
+            $containerResolver->get(HubInterface::class),
+            isolateScope: $configReader->requiredBool('sentry_psr.isolate_http_scope'),
+            flushOnHttpError: $configReader->requiredBool('sentry_psr.flush_on_http_error'),
+            captureRequestContext: $configReader->requiredBool('sentry_psr.capture_http_request_context')
+                && $configReader->requiredBool('sentry_psr.http_context.enabled'),
+            httpContext: $httpContext,
+            logger: LoggerHelper::getLogger($containerResolver),
+            sentryLifecycle: $containerResolver->get(SentryLifecycle::class),
         );
     }
 }

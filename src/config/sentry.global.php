@@ -3,8 +3,56 @@
 declare(strict_types=1);
 
 return [
-    'sentry' => [
+    'sentry'     => [
         'dsn'                => \getenv('SENTRY_DSN'),
         'traces_sample_rate' => 1.0,
+    ],
+
+    'sentry_psr' => [
+        'isolate_http_scope'           => true,
+        'isolate_console_scope'        => true,
+        'set_current_hub'              => true,
+        'default_integrations'         => false,
+        'flush_on_http_error'          => false,
+        'flush_on_console_terminate'   => true,
+        'flush_timeout'                => 2,
+        'capture_http_request_context' => true,
+        'capture_console_input'        => true,
+        'log_console_command_start'    => true,
+        'redaction'                    => [
+            'replacement'             => '[Filtered]',
+            'sensitive_key_pattern'   => '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
+            'max_depth'               => 8,
+            'max_items_per_container' => 100,
+            'max_total_nodes'         => 5000,
+            'use_default_rules'       => false,
+            'rules'                   => [],
+            'regex_rules'             => [],
+        ],
+        'http_context'                 => [
+            'enabled'               => true,
+            'capture_headers'       => false,
+            'capture_query_string'  => false,
+            'allowed_headers'       => [
+                'User-Agent',
+                'X-Request-Id',
+            ],
+            'request_id_headers'    => [
+                'X-Request-Id',
+                'X-Correlation-Id',
+            ],
+            'request_id_attributes' => [
+                'request_id',
+                'requestId',
+                'correlation_id',
+                'correlationId',
+            ],
+            'allowed_attributes'    => [
+                'route',
+                'route_name',
+                'request_id',
+                'correlation_id',
+            ],
+        ],
     ],
 ];

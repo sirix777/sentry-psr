@@ -1,0 +1,132 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Sirix\SentryPsr\Test\Config;
+
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
+use Sirix\ContainerResolver\ConfigReader;
+use Sirix\ContainerResolver\ContainerResolver;
+use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
+use Sirix\ContainerResolver\Exception\MissingConfigValueException;
+use Sirix\SentryPsr\Config\SentryPsrConfig;
+use Sirix\SentryPsr\Test\Container\InMemoryContainer;
+
+/**
+ * @internal
+ */
+#[CoversClass(SentryPsrConfig::class)]
+final class SentryPsrConfigTest extends TestCase
+{
+    public function testAllowsCompleteSentryPsrSection(): void
+    {
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config()));
+
+        $this->assertTrue(true);
+    }
+
+    public function testThrowsWhenSentryPsrConfigIsMissing(): void
+    {
+        $this->expectException(MissingConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader([]));
+    }
+
+    public function testThrowsWhenSentryPsrConfigIsNotArray(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader([
+            'sentry_psr' => 'invalid',
+        ]));
+    }
+
+    public function testThrowsWhenRequiredSentryPsrKeyIsMissing(): void
+    {
+        $this->expectException(MissingConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader([
+            'sentry_psr' => [],
+        ]));
+    }
+
+    public function testThrowsWhenIntegerConfigIsNegative(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'flush_timeout' => -1,
+        ])));
+    }
+
+    public function testThrowsWhenSensitiveKeyPatternIsInvalidRegex(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'redaction' => [
+                'sensitive_key_pattern' => '(',
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenRedactionRuleTypeIsInvalid(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'redaction' => [
+                'rules' => [
+                    'email' => [
+                        'type' => 'unknown',
+                    ],
+                ],
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenRegexRedactionRulePatternIsInvalid(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'redaction' => [
+                'regex_rules' => [
+                    [
+                        'pattern' => '(',
+                        'rule'    => [
+                            'type' => 'email',
+                        ],
+                    ],
+                ],
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenStartEndRedactionRuleIsMissingRequiredInteger(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'redaction' => [
+                'rules' => [
+                    'card_number' => [
+                        'type'  => 'start_end',
+                        'start' => 6,
+                    ],
+                ],
+            ],
+        ])));
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    private function configReader(array $config): ConfigReader
+    {
+        return ConfigReader::fromContainer(ContainerResolver::forFactory(new InMemoryContainer([
+            'config' => $config,
+        ]), self::class));
+    }
+}
