@@ -16,6 +16,8 @@ use Sentry\State\HubInterface;
 use Sentry\State\Scope;
 use Sentry\Transport\Result;
 use Sentry\Transport\ResultStatus;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterContext;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Sirix\SentryPsr\Listener\SentryCommandListener;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\ConsoleEvents;
@@ -152,6 +154,37 @@ final class SentryCommandListenerTest extends TestCase
         $listener = new SentryCommandListener($this->hubMock, isolateScope: false, logger: $this->loggerMock);
 
         $listener->onConsoleError($event);
+    }
+
+    public function testOnConsoleErrorSkipsIgnoredExceptionWithoutLoggingOrFlushing(): void
+    {
+        $command   = new Command('auth:refresh');
+        $input     = new ArrayInput([]);
+        $output    = new NullOutput();
+        $exception = new RuntimeException('Unauthorized', 401);
+        $event     = new ConsoleErrorEvent($input, $output, $exception, $command);
+        $filter    = $this->createMock(ExceptionFilterInterface::class);
+
+        $filter->expects($this->once())
+            ->method('shouldCapture')
+            ->with(
+                $exception,
+                $this->callback(static fn (ExceptionFilterContext $context): bool => ExceptionFilterContext::SOURCE_CONSOLE === $context->source
+                    && 'auth:refresh' === $context->consoleCommand
+                    && 401 === $context->consoleExitCode)
+            )
+            ->willReturn(false)
+        ;
+
+        $this->hubMock->expects($this->never())->method('captureException');
+        $this->hubMock->expects($this->never())->method('getClient');
+        $this->loggerMock->expects($this->never())->method('error');
+
+        (new SentryCommandListener(
+            $this->hubMock,
+            logger: $this->loggerMock,
+            exceptionFilter: $filter,
+        ))->onConsoleError($event);
     }
 
     public function testCanDisableConsoleCommandStartedInfoLog(): void

@@ -9,7 +9,9 @@ use Sirix\ContainerResolver\Exception\InvalidConfigValueException;
 use Sirix\ContainerResolver\Exception\MissingConfigValueException;
 
 use function array_key_exists;
+use function class_exists;
 use function in_array;
+use function interface_exists;
 use function is_array;
 use function is_int;
 use function is_string;
@@ -79,6 +81,10 @@ final readonly class SentryPsrConfig
         $configReader->requiredStringList('sentry_psr.http_context.request_id_headers');
         $configReader->requiredStringList('sentry_psr.http_context.request_id_attributes');
         $configReader->requiredStringList('sentry_psr.http_context.allowed_attributes');
+
+        if ($configReader->has('sentry_psr.exception_filter')) {
+            self::assertExceptionFilter($configReader);
+        }
     }
 
     /**
@@ -131,6 +137,55 @@ final readonly class SentryPsrConfig
             }
 
             self::assertRuleConfig($itemPath . '.rule', $regexRuleConfig['rule']);
+        }
+    }
+
+    /**
+     * @throws InvalidConfigValueException
+     */
+    private static function assertExceptionFilter(ConfigReader $configReader): void
+    {
+        $configReader->requiredMap('sentry_psr.exception_filter');
+        $configReader->bool('sentry_psr.exception_filter.enabled', true);
+
+        foreach ($configReader->stringList('sentry_psr.exception_filter.ignore_classes', []) as $index => $ignoredClass) {
+            if (! class_exists($ignoredClass) && ! interface_exists($ignoredClass)) {
+                throw InvalidConfigValueException::forType(
+                    'sentry_psr.exception_filter.ignore_classes.' . $index,
+                    'existing class or interface',
+                    $ignoredClass,
+                    self::class,
+                );
+            }
+        }
+
+        self::assertIntList(
+            'sentry_psr.exception_filter.ignore_http_statuses',
+            $configReader->list('sentry_psr.exception_filter.ignore_http_statuses', []),
+        );
+        self::assertIntList(
+            'sentry_psr.exception_filter.ignore_codes',
+            $configReader->list('sentry_psr.exception_filter.ignore_codes', []),
+        );
+
+        foreach ($configReader->stringList('sentry_psr.exception_filter.ignore_message_patterns', []) as $index => $pattern) {
+            self::assertRegexPattern('sentry_psr.exception_filter.ignore_message_patterns.' . $index, $pattern);
+        }
+
+        $configReader->bool('sentry_psr.exception_filter.inspect_previous', true);
+    }
+
+    /**
+     * @param list<mixed> $values
+     *
+     * @throws InvalidConfigValueException
+     */
+    private static function assertIntList(string $path, array $values): void
+    {
+        foreach ($values as $index => $value) {
+            if (! is_int($value)) {
+                throw InvalidConfigValueException::forType($path . '.' . $index, 'int', $value, self::class);
+            }
         }
     }
 

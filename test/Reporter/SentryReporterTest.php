@@ -12,6 +12,8 @@ use Sentry\Breadcrumb;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterContext;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Sirix\SentryPsr\Reporter\SentryReporter;
 
 /**
@@ -49,6 +51,32 @@ final class SentryReporterTest extends TestCase
         ;
 
         (new SentryReporter($hub))->captureException($exception, [
+            'job_id' => 'job-123',
+        ]);
+    }
+
+    public function testCaptureExceptionSkipsIgnoredException(): void
+    {
+        $exception = new RuntimeException('Auth expired');
+        $hub       = $this->createMock(HubInterface::class);
+        $filter    = $this->createMock(ExceptionFilterInterface::class);
+
+        $filter->expects($this->once())
+            ->method('shouldCapture')
+            ->with(
+                $exception,
+                $this->callback(static fn (ExceptionFilterContext $context): bool => ExceptionFilterContext::SOURCE_REPORTER === $context->source
+                    && [
+                        'job_id' => 'job-123',
+                    ] === $context->metadata)
+            )
+            ->willReturn(false)
+        ;
+
+        $hub->expects($this->never())->method('withScope');
+        $hub->expects($this->never())->method('captureException');
+
+        (new SentryReporter($hub, $filter))->captureException($exception, [
             'job_id' => 'job-123',
         ]);
     }

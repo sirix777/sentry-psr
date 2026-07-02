@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Sentry\State\HubInterface;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 use Sirix\SentryPsr\Middleware\SentryErrorMiddleware;
 use Sirix\SentryPsr\Middleware\SentryErrorMiddlewareFactory;
@@ -98,5 +99,19 @@ final class SentryErrorMiddlewareFactoryTest extends TestCase
         $httpContext = (new ReflectionProperty($middleware, 'httpContext'))->getValue($middleware);
         $this->assertFalse($httpContext['enabled']);
         $this->assertTrue($httpContext['capture_headers']);
+    }
+
+    public function testFactoryUsesCustomExceptionFilterService(): void
+    {
+        $exceptionFilter = $this->createMock(ExceptionFilterInterface::class);
+
+        $middleware = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class             => $this->hubMock,
+            SentryLifecycle::class          => $this->lifecycle,
+            ExceptionFilterInterface::class => $exceptionFilter,
+            'config'                        => SentryPsrConfigFixture::config(),
+        ]));
+
+        $this->assertSame($exceptionFilter, (new ReflectionProperty($middleware, 'exceptionFilter'))->getValue($middleware));
     }
 }

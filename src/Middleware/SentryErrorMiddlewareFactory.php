@@ -10,6 +10,7 @@ use Sentry\State\HubInterface;
 use Sirix\ContainerResolver\ConfigReader;
 use Sirix\ContainerResolver\ContainerResolver;
 use Sirix\SentryPsr\Config\SentryPsrConfig;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterResolver;
 use Sirix\SentryPsr\Helper\LoggerHelper;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 
@@ -36,6 +37,7 @@ class SentryErrorMiddlewareFactory
             httpContext: $httpContext,
             logger: LoggerHelper::getLogger($containerResolver),
             sentryLifecycle: $containerResolver->get(SentryLifecycle::class),
+            exceptionFilter: ExceptionFilterResolver::fromConfiguredContainer($containerResolver, $configReader),
         );
     }
 }

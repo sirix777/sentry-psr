@@ -8,6 +8,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Sentry\State\HubInterface;
 use Sirix\ContainerResolver\ContainerResolver;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterResolver;
 
 final readonly class SentryReporterFactory
 {
@@ -18,6 +19,9 @@ final readonly class SentryReporterFactory
     {
         $containerResolver = ContainerResolver::forFactory($container, self::class);
 
-        return new SentryReporter($containerResolver->get(HubInterface::class));
+        return new SentryReporter(
+            $containerResolver->get(HubInterface::class),
+            ExceptionFilterResolver::optionalFromContainer($containerResolver),
+        );
     }
 }

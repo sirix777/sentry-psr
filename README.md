@@ -58,6 +58,14 @@ return [
         'capture_http_request_context' => true,
         'capture_console_input' => true,
         'log_console_command_start' => true,
+        'exception_filter' => [
+            'enabled' => true,
+            'ignore_classes' => [],
+            'ignore_http_statuses' => [],
+            'ignore_codes' => [],
+            'ignore_message_patterns' => [],
+            'inspect_previous' => true,
+        ],
         'redaction' => [
             'replacement' => '[Filtered]',
             'sensitive_key_pattern' => '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
@@ -103,6 +111,56 @@ return [
 - `sentry_psr` controls this package: scope isolation, global hub behavior, flush timing and HTTP/console context enrichment.
 
 Invalid container services, missing `sentry_psr`, or invalid config value types are reported through `sirix/container-resolver` exceptions, so misconfiguration fails early and with context.
+
+### Exception filtering
+
+Use `sentry_psr.exception_filter` to suppress expected exceptions before this package calls `captureException()`. Filtered exceptions are still rethrown by the HTTP middleware and still flow through Symfony Console, but they are not sent to Sentry, not logged by this package as captured errors, and do not trigger the HTTP/error flush path.
+
+```php
+'exception_filter' => [
+    'enabled' => true,
+    'ignore_classes' => [
+        AuthExpiredException::class,
+        UnauthorizedException::class,
+    ],
+    'ignore_http_statuses' => [
+        401,
+    ],
+    'ignore_codes' => [],
+    'ignore_message_patterns' => [
+        '/token expired/i',
+    ],
+    'inspect_previous' => true,
+],
+```
+
+`ignore_classes` matches class and interface inheritance and every entry must resolve to an existing class or interface during config validation. `ignore_http_statuses` checks `getStatusCode()`, `getStatus()` and then the throwable code when it looks like an HTTP status code. `ignore_codes` checks the raw throwable code. `ignore_message_patterns` accepts valid regex patterns. When `inspect_previous=true`, the same rules are applied to the previous-exception chain.
+
+The configured filter is created by this package's HTTP, console and reporter factories. For domain-specific logic, register a `Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface` service in your container:
+
+```php
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterContext;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
+
+final readonly class AuthExceptionFilter implements ExceptionFilterInterface
+{
+    public function shouldCapture(\Throwable $throwable, ExceptionFilterContext $context): bool
+    {
+        if ($throwable instanceof AuthExpiredException) {
+            return false;
+        }
+
+        if (
+            ExceptionFilterContext::SOURCE_HTTP === $context->source
+            && 401 === $throwable->getCode()
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+}
+```
 
 ### Console input redaction
 
