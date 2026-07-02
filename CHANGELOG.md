@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-07-02
+### Added
+- Added package-level exception filtering through `sentry_psr.exception_filter` for ignored classes, HTTP statuses, throwable codes and message patterns.
+- Added `Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface` so applications can override Sentry capture decisions with domain-specific logic.
+
 ## [2.0.0] - 2026-06-16
 ### Added
 - Added `sentry_psr` package-level configuration for scope isolation, global hub behavior, flush behavior and context enrichment.
@@ -80,4 +85,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tooling
 - Configured coding standards (PHP-CS-Fixer), static analysis (PHPStan), rector, and dependency analysis scripts via Composer scripts in `composer.json`.
-

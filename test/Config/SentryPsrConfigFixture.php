@@ -36,6 +36,14 @@ final readonly class SentryPsrConfigFixture
             'capture_http_request_context' => true,
             'capture_console_input'        => true,
             'log_console_command_start'    => true,
+            'exception_filter'             => [
+                'enabled'                 => true,
+                'ignore_classes'          => [],
+                'ignore_http_statuses'    => [],
+                'ignore_codes'            => [],
+                'ignore_message_patterns' => [],
+                'inspect_previous'        => true,
+            ],
             'redaction'                    => [
                 'replacement'             => '[Filtered]',
                 'sensitive_key_pattern'   => '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',

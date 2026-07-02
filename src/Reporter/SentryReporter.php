@@ -7,17 +7,23 @@ namespace Sirix\SentryPsr\Reporter;
 use Sentry\Breadcrumb;
 use Sentry\Severity;
 use Sentry\State\HubInterface;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterContext;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Throwable;
 
 final readonly class SentryReporter
 {
-    public function __construct(private HubInterface $hub) {}
+    public function __construct(private HubInterface $hub, private ?ExceptionFilterInterface $exceptionFilter = null) {}
 
     /**
      * @param array<string, mixed> $context
      */
     public function captureException(Throwable $throwable, array $context = []): void
     {
+        if (! $this->shouldCaptureException($throwable, ExceptionFilterContext::reporter($context))) {
+            return;
+        }
+
         $this->hub->withScope(function($scope) use ($throwable, $context): void {
             if ([] !== $context) {
                 $scope->setContext('additional_context', $context);
@@ -100,5 +106,10 @@ final readonly class SentryReporter
         $this->hub->configureScope(static function($scope) use ($key, $context): void {
             $scope->setContext($key, $context);
         });
+    }
+
+    private function shouldCaptureException(Throwable $throwable, ExceptionFilterContext $exceptionFilterContext): bool
+    {
+        return ! $this->exceptionFilter instanceof ExceptionFilterInterface || $this->exceptionFilter->shouldCapture($throwable, $exceptionFilterContext);
     }
 }

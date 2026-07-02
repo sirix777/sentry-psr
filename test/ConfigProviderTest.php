@@ -10,6 +10,7 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Sentry\State\HubInterface;
 use Sirix\SentryPsr\ConfigProvider;
 use Sirix\SentryPsr\ConsoleEventDispatcher\ConsoleEventDispatcherFactory;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Sirix\SentryPsr\Hub\SentryHubFactory;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycleFactory;
@@ -43,6 +44,8 @@ final class ConfigProviderTest extends TestCase
 
         $this->assertArrayHasKey(HubInterface::class, $factories);
         $this->assertSame(SentryHubFactory::class, $factories[HubInterface::class]);
+
+        $this->assertArrayNotHasKey(ExceptionFilterInterface::class, $factories);
 
         $this->assertArrayHasKey(SentryLifecycle::class, $factories);
         $this->assertSame(SentryLifecycleFactory::class, $factories[SentryLifecycle::class]);

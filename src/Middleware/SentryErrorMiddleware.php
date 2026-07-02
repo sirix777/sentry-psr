@@ -11,6 +11,8 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterContext;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 use Throwable;
 
@@ -36,6 +38,7 @@ class SentryErrorMiddleware implements MiddlewareInterface
         private readonly array $httpContext = [],
         private readonly ?LoggerInterface $logger = null,
         private readonly ?SentryLifecycle $sentryLifecycle = null,
+        private readonly ?ExceptionFilterInterface $exceptionFilter = null,
     ) {}
 
     /**
@@ -76,8 +79,11 @@ class SentryErrorMiddleware implements MiddlewareInterface
         try {
             return $requestHandler->handle($serverRequest);
         } catch (Throwable $exception) {
-            $capturedException = true;
+            if (! $this->shouldCaptureException($exception, ExceptionFilterContext::http($serverRequest))) {
+                throw $exception;
+            }
 
+            $capturedException = true;
             $this->hub->captureException($exception);
             $this->logger?->error($exception->getMessage(), [
                 'exception'    => $exception,
@@ -90,6 +96,11 @@ class SentryErrorMiddleware implements MiddlewareInterface
                 $sentryLifecycle->flush();
             }
         }
+    }
+
+    private function shouldCaptureException(Throwable $throwable, ExceptionFilterContext $exceptionFilterContext): bool
+    {
+        return ! $this->exceptionFilter instanceof ExceptionFilterInterface || $this->exceptionFilter->shouldCapture($throwable, $exceptionFilterContext);
     }
 
     private function configureRequestScope(Scope $scope, ServerRequestInterface $serverRequest): null

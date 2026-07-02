@@ -9,6 +9,8 @@ use Sentry\Breadcrumb;
 use Sentry\State\HubInterface;
 use Sentry\State\Scope;
 use Sirix\Redaction\RedactorInterface;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterContext;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 use Sirix\SentryPsr\Redaction\SentryRedactorFactory;
 use Symfony\Component\Console\ConsoleEvents;
@@ -16,6 +18,7 @@ use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\Console\Event\ConsoleErrorEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Throwable;
 
 class SentryCommandListener implements EventSubscriberInterface
 {
@@ -30,6 +33,7 @@ class SentryCommandListener implements EventSubscriberInterface
         private readonly ?LoggerInterface $logger = null,
         private readonly ?SentryLifecycle $sentryLifecycle = null,
         private readonly ?RedactorInterface $redactor = null,
+        private readonly ?ExceptionFilterInterface $exceptionFilter = null,
     ) {}
 
     public static function getSubscribedEvents(): array
@@ -63,9 +67,9 @@ class SentryCommandListener implements EventSubscriberInterface
         if ($this->isolateScope && 0 === $this->activeScopes) {
             $this->lifecycle()->withIsolatedScope(function(Scope $scope) use ($consoleErrorEvent): void {
                 $this->configureErrorScope($scope, $consoleErrorEvent);
-                $this->captureAndLogError($consoleErrorEvent);
+                $captured = $this->captureAndLogErrorIfAllowed($consoleErrorEvent);
 
-                if ($this->flushOnTerminate) {
+                if ($captured && $this->flushOnTerminate) {
                     $this->lifecycle()->flush();
                 }
             });
@@ -74,7 +78,7 @@ class SentryCommandListener implements EventSubscriberInterface
         }
 
         $this->configureErrorScope(null, $consoleErrorEvent);
-        $this->captureAndLogError($consoleErrorEvent);
+        $this->captureAndLogErrorIfAllowed($consoleErrorEvent);
     }
 
     public function onConsoleTerminate(ConsoleTerminateEvent $consoleTerminateEvent): void
@@ -134,10 +138,18 @@ class SentryCommandListener implements EventSubscriberInterface
         ));
     }
 
-    private function captureAndLogError(ConsoleErrorEvent $consoleErrorEvent): void
+    private function captureAndLogErrorIfAllowed(ConsoleErrorEvent $consoleErrorEvent): bool
     {
-        $throwable   = $consoleErrorEvent->getError();
-        $command     = $consoleErrorEvent->getCommand();
+        $throwable = $consoleErrorEvent->getError();
+        $command   = $consoleErrorEvent->getCommand();
+
+        if (! $this->shouldCaptureException(
+            $throwable,
+            ExceptionFilterContext::console($command?->getName(), $consoleErrorEvent->getExitCode()),
+        )) {
+            return false;
+        }
+
         $exceptionId = $this->sentryHub->captureException($throwable);
 
         $this->logger?->error('Command failed with exception', [
@@ -146,6 +158,13 @@ class SentryCommandListener implements EventSubscriberInterface
             'trace'     => $throwable->getTraceAsString(),
             'sentry_id' => $exceptionId,
         ]);
+
+        return true;
+    }
+
+    private function shouldCaptureException(Throwable $throwable, ExceptionFilterContext $exceptionFilterContext): bool
+    {
+        return ! $this->exceptionFilter instanceof ExceptionFilterInterface || $this->exceptionFilter->shouldCapture($throwable, $exceptionFilterContext);
     }
 
     /**

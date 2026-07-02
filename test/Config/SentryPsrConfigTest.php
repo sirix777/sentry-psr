@@ -26,6 +26,18 @@ final class SentryPsrConfigTest extends TestCase
         $this->assertTrue(true);
     }
 
+    public function testAllowsMissingExceptionFilterForBackwardCompatibility(): void
+    {
+        $sentryPsr = SentryPsrConfigFixture::sentryPsr();
+        unset($sentryPsr['exception_filter']);
+
+        SentryPsrConfig::assertConfigured($this->configReader([
+            'sentry_psr' => $sentryPsr,
+        ]));
+
+        $this->assertTrue(true);
+    }
+
     public function testThrowsWhenSentryPsrConfigIsMissing(): void
     {
         $this->expectException(MissingConfigValueException::class);
@@ -116,6 +128,56 @@ final class SentryPsrConfigTest extends TestCase
                         'start' => 6,
                     ],
                 ],
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenExceptionFilterHttpStatusIsNotInteger(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'exception_filter' => [
+                'ignore_http_statuses' => [
+                    '401',
+                ],
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenExceptionFilterClassDoesNotExist(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'exception_filter' => [
+                'ignore_classes' => [
+                    'App\Exception\UnauthorzedException',
+                ],
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenExceptionFilterMessagePatternIsInvalidRegex(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'exception_filter' => [
+                'ignore_message_patterns' => [
+                    '(',
+                ],
+            ],
+        ])));
+    }
+
+    public function testThrowsWhenExceptionFilterSectionIsNotMap(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        SentryPsrConfig::assertConfigured($this->configReader(SentryPsrConfigFixture::config([
+            'exception_filter' => [
+                'invalid',
             ],
         ])));
     }

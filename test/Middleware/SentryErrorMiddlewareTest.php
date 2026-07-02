@@ -18,6 +18,8 @@ use Sentry\State\HubInterface;
 use Sentry\State\Scope;
 use Sentry\Transport\Result;
 use Sentry\Transport\ResultStatus;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterContext;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 use Sirix\SentryPsr\Middleware\SentryErrorMiddleware;
 use Throwable;
@@ -106,6 +108,42 @@ class SentryErrorMiddlewareTest extends TestCase
             $this->hubMock,
             logger: $this->loggerMock,
             sentryLifecycle: new SentryLifecycle($this->hubMock, logger: $this->loggerMock),
+        );
+
+        $this->expectExceptionObject($exception);
+
+        $middleware->process($this->requestMock, $this->handlerMock);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function testProcessSkipsIgnoredExceptionWithoutLoggingOrFlushing(): void
+    {
+        $exception = new RuntimeException('Unauthorized', 401);
+        $filter    = $this->createMock(ExceptionFilterInterface::class);
+
+        $filter->expects($this->once())
+            ->method('shouldCapture')
+            ->with(
+                $exception,
+                $this->callback(fn (ExceptionFilterContext $context): bool => ExceptionFilterContext::SOURCE_HTTP === $context->source
+                    && $context->request === $this->requestMock)
+            )
+            ->willReturn(false)
+        ;
+
+        $this->hubMock->expects($this->never())->method('captureException');
+        $this->hubMock->expects($this->never())->method('getClient');
+        $this->loggerMock->expects($this->never())->method('error');
+        $this->handlerMock->method('handle')->willThrowException($exception);
+
+        $middleware = new SentryErrorMiddleware(
+            $this->hubMock,
+            flushOnHttpError: true,
+            logger: $this->loggerMock,
+            sentryLifecycle: new SentryLifecycle($this->hubMock, logger: $this->loggerMock),
+            exceptionFilter: $filter,
         );
 
         $this->expectExceptionObject($exception);

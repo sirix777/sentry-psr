@@ -11,6 +11,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use Sentry\State\HubInterface;
 use Sirix\Redaction\RedactorInterface;
+use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterInterface;
 use Sirix\SentryPsr\Lifecycle\SentryLifecycle;
 use Sirix\SentryPsr\Listener\SentryCommandListener;
 use Sirix\SentryPsr\Listener\SentryCommandListenerFactory;
@@ -159,5 +160,19 @@ final class SentryCommandListenerFactoryTest extends TestCase
             'refresh-token' => 'fake-refresh-token-should-not-appear-in-sentry',
             'mode'          => 'smoke',
         ]));
+    }
+
+    public function testFactoryUsesCustomExceptionFilterService(): void
+    {
+        $exceptionFilter = $this->createMock(ExceptionFilterInterface::class);
+
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class             => $this->hubMock,
+            SentryLifecycle::class          => $this->lifecycle,
+            ExceptionFilterInterface::class => $exceptionFilter,
+            'config'                        => SentryPsrConfigFixture::config(),
+        ]));
+
+        $this->assertSame($exceptionFilter, (new ReflectionProperty($listener, 'exceptionFilter'))->getValue($listener));
     }
 }
