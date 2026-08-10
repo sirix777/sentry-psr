@@ -24,7 +24,7 @@
     "psr/http-server-middleware": "^1.0",
     "psr/log": "^1.0 || ^2.0 || ^3.0",
     "sentry/sentry": "^4.0",
-    "sirix/container-resolver": "^0.1.2",
+    "sirix/container-resolver": "^0.2",
     "sirix/redaction": "^2.1"
   },
   "require-dev": {
