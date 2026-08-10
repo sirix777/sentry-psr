@@ -16,7 +16,7 @@ final class LoggerHelper
     public static function getLogger(ContainerResolver $containerResolver): ?LoggerInterface
     {
         foreach ([LoggerInterface::class, 'Monolog\Logger', 'logger'] as $serviceId) {
-            $logger = $containerResolver->optional($serviceId);
+            $logger = $containerResolver->optionalExisting($serviceId);
 
             if ($logger instanceof LoggerInterface) {
                 return $logger;
