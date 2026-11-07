@@ -58,6 +58,8 @@ return [
         'capture_http_request_context' => true,
         'capture_console_input' => true,
         'log_console_command_start' => true,
+        'log_http_captured_exceptions' => true,
+        'log_console_captured_exceptions' => true,
         'exception_filter' => [
             'enabled' => true,
             'ignore_classes' => [],
@@ -327,6 +329,8 @@ composer require symfony/console symfony/event-dispatcher
 - `ConsoleEvents::TERMINATE` — flush if configured and pop command scope.
 
 Set `sentry_psr.log_console_command_start=false` to disable the PSR-3 `Console command started` info log while keeping command breadcrumbs and error reporting enabled.
+
+Set `sentry_psr.log_http_captured_exceptions=false` or `sentry_psr.log_console_captured_exceptions=false` to stop `SentryErrorMiddleware` or `SentryCommandListener` from writing captured exceptions to the PSR-3 logger. The exception is still sent to Sentry, the scope is configured, flushing happens as before and HTTP exceptions are still rethrown. Both options default to `true`.
 
 Manual wiring:
 
