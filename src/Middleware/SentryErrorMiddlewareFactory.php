@@ -38,6 +38,7 @@ class SentryErrorMiddlewareFactory
             logger: LoggerHelper::getLogger($containerResolver),
             sentryLifecycle: $containerResolver->get(SentryLifecycle::class),
             exceptionFilter: ExceptionFilterResolver::fromConfiguredContainer($containerResolver, $configReader),
+            logCapturedExceptions: $configReader->bool('sentry_psr.log_http_captured_exceptions', true),
         );
     }
 }
