@@ -118,6 +118,36 @@ class SentryErrorMiddlewareTest extends TestCase
     /**
      * @throws Throwable
      */
+    public function testProcessCapturesButDoesNotLogWhenLoggingCapturedExceptionsDisabled(): void
+    {
+        $exception = new RuntimeException('Test exception');
+
+        $this->hubMock->expects($this->once())
+            ->method('captureException')
+            ->with($exception)
+        ;
+
+        $this->loggerMock->expects($this->never())->method('error');
+
+        $this->handlerMock->method('handle')
+            ->willThrowException($exception)
+        ;
+
+        $middleware = new SentryErrorMiddleware(
+            $this->hubMock,
+            logger: $this->loggerMock,
+            sentryLifecycle: new SentryLifecycle($this->hubMock, logger: $this->loggerMock),
+            logCapturedExceptions: false,
+        );
+
+        $this->expectExceptionObject($exception);
+
+        $middleware->process($this->requestMock, $this->handlerMock);
+    }
+
+    /**
+     * @throws Throwable
+     */
     public function testProcessSkipsIgnoredExceptionWithoutLoggingOrFlushing(): void
     {
         $exception = new RuntimeException('Unauthorized', 401);

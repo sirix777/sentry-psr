@@ -36,6 +36,7 @@ class SentryCommandListenerFactory
             sentryLifecycle: $containerResolver->get(SentryLifecycle::class),
             redactor: (new SentryRedactorFactory())($container),
             exceptionFilter: ExceptionFilterResolver::fromConfiguredContainer($containerResolver, $configReader),
+            logCapturedExceptions: $configReader->bool('sentry_psr.log_console_captured_exceptions', true),
         );
     }
 }

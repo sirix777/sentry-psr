@@ -156,6 +156,29 @@ final class SentryCommandListenerTest extends TestCase
         $listener->onConsoleError($event);
     }
 
+    public function testOnConsoleErrorCapturesButDoesNotLogWhenLoggingCapturedExceptionsDisabled(): void
+    {
+        $exception = new RuntimeException('Failure');
+        $event     = new ConsoleErrorEvent(new ArrayInput([]), new NullOutput(), $exception, new Command('fail:cmd'));
+
+        $this->hubMock
+            ->expects($this->once())
+            ->method('captureException')
+            ->with($exception)
+            ->willReturn(new EventId('b27d9f5b3c234d1ab0e11f76bb6af2e7'))
+        ;
+
+        $this->loggerMock->expects($this->never())->method('error');
+
+        $listener = new SentryCommandListener(
+            $this->hubMock,
+            isolateScope: false,
+            logger: $this->loggerMock,
+            logCapturedExceptions: false,
+        );
+        $listener->onConsoleError($event);
+    }
+
     public function testOnConsoleErrorSkipsIgnoredExceptionWithoutLoggingOrFlushing(): void
     {
         $command   = new Command('auth:refresh');

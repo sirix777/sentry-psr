@@ -101,6 +101,41 @@ final class SentryErrorMiddlewareFactoryTest extends TestCase
         $this->assertTrue($httpContext['capture_headers']);
     }
 
+    public function testFactoryLogsCapturedExceptionsByDefaultWhenKeyMissing(): void
+    {
+        $config = SentryPsrConfigFixture::config();
+        unset($config['sentry_psr']['log_http_captured_exceptions']);
+
+        $middleware = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            'config'               => $config,
+        ]));
+
+        $this->assertTrue((new ReflectionProperty($middleware, 'logCapturedExceptions'))->getValue($middleware));
+    }
+
+    public function testFactoryReadsLogCapturedExceptionsFlag(): void
+    {
+        $container = static fn (bool $value): array => [
+            'config' => SentryPsrConfigFixture::config([
+                'log_http_captured_exceptions' => $value,
+            ]),
+        ];
+
+        $disabled = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+        ] + $container(false)));
+        $enabled = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+        ] + $container(true)));
+
+        $this->assertFalse((new ReflectionProperty($disabled, 'logCapturedExceptions'))->getValue($disabled));
+        $this->assertTrue((new ReflectionProperty($enabled, 'logCapturedExceptions'))->getValue($enabled));
+    }
+
     public function testFactoryUsesCustomExceptionFilterService(): void
     {
         $exceptionFilter = $this->createMock(ExceptionFilterInterface::class);

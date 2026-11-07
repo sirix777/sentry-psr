@@ -64,6 +64,8 @@ return [
         'capture_http_request_context' => true,
         'capture_console_input' => true,
         'log_console_command_start' => true,
+        'log_http_captured_exceptions' => true,
+        'log_console_captured_exceptions' => true,
         'redaction' => [
             'replacement' => '[Filtered]',
             'sensitive_key_pattern' => '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',

@@ -39,6 +39,7 @@ class SentryErrorMiddleware implements MiddlewareInterface
         private readonly ?LoggerInterface $logger = null,
         private readonly ?SentryLifecycle $sentryLifecycle = null,
         private readonly ?ExceptionFilterInterface $exceptionFilter = null,
+        private readonly bool $logCapturedExceptions = true,
     ) {}
 
     /**
@@ -85,10 +86,13 @@ class SentryErrorMiddleware implements MiddlewareInterface
 
             $capturedException = true;
             $this->hub->captureException($exception);
-            $this->logger?->error($exception->getMessage(), [
-                'exception'    => $exception,
-                'request_path' => $serverRequest->getUri()->getPath(),
-            ]);
+
+            if ($this->logCapturedExceptions) {
+                $this->logger?->error($exception->getMessage(), [
+                    'exception'    => $exception,
+                    'request_path' => $serverRequest->getUri()->getPath(),
+                ]);
+            }
 
             throw $exception;
         } finally {

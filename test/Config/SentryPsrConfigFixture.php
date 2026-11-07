@@ -26,17 +26,19 @@ final readonly class SentryPsrConfigFixture
     public static function sentryPsr(): array
     {
         return [
-            'isolate_http_scope'           => true,
-            'isolate_console_scope'        => true,
-            'set_current_hub'              => true,
-            'default_integrations'         => false,
-            'flush_on_http_error'          => false,
-            'flush_on_console_terminate'   => true,
-            'flush_timeout'                => 2,
-            'capture_http_request_context' => true,
-            'capture_console_input'        => true,
-            'log_console_command_start'    => true,
-            'exception_filter'             => [
+            'isolate_http_scope'              => true,
+            'isolate_console_scope'           => true,
+            'set_current_hub'                 => true,
+            'default_integrations'            => false,
+            'flush_on_http_error'             => false,
+            'flush_on_console_terminate'      => true,
+            'flush_timeout'                   => 2,
+            'capture_http_request_context'    => true,
+            'capture_console_input'           => true,
+            'log_console_command_start'       => true,
+            'log_http_captured_exceptions'    => true,
+            'log_console_captured_exceptions' => true,
+            'exception_filter'                => [
                 'enabled'                 => true,
                 'ignore_classes'          => [],
                 'ignore_http_statuses'    => [],
@@ -44,7 +46,7 @@ final readonly class SentryPsrConfigFixture
                 'ignore_message_patterns' => [],
                 'inspect_previous'        => true,
             ],
-            'redaction'                    => [
+            'redaction'                       => [
                 'replacement'             => '[Filtered]',
                 'sensitive_key_pattern'   => '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
                 'max_depth'               => 8,
@@ -54,7 +56,7 @@ final readonly class SentryPsrConfigFixture
                 'rules'                   => [],
                 'regex_rules'             => [],
             ],
-            'http_context'                 => [
+            'http_context'                    => [
                 'enabled'               => true,
                 'capture_headers'       => false,
                 'capture_query_string'  => false,

@@ -26,6 +26,18 @@ final class SentryPsrConfigTest extends TestCase
         $this->assertTrue(true);
     }
 
+    public function testAllowsMissingCapturedExceptionLoggingKeysForBackwardCompatibility(): void
+    {
+        $sentryPsr = SentryPsrConfigFixture::sentryPsr();
+        unset($sentryPsr['log_http_captured_exceptions'], $sentryPsr['log_console_captured_exceptions']);
+
+        SentryPsrConfig::assertConfigured($this->configReader([
+            'sentry_psr' => $sentryPsr,
+        ]));
+
+        $this->assertTrue(true);
+    }
+
     public function testAllowsMissingExceptionFilterForBackwardCompatibility(): void
     {
         $sentryPsr = SentryPsrConfigFixture::sentryPsr();
