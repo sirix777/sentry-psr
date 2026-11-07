@@ -94,6 +94,37 @@ final class SentryCommandListenerFactoryTest extends TestCase
         $this->assertSame($logger, (new ReflectionProperty($listener, 'logger'))->getValue($listener));
     }
 
+    public function testFactoryLogsCapturedExceptionsByDefaultWhenKeyMissing(): void
+    {
+        $config = SentryPsrConfigFixture::config();
+        unset($config['sentry_psr']['log_console_captured_exceptions']);
+
+        $listener = $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            'config'               => $config,
+        ]));
+
+        $this->assertTrue((new ReflectionProperty($listener, 'logCapturedExceptions'))->getValue($listener));
+    }
+
+    public function testFactoryReadsLogCapturedExceptionsFlag(): void
+    {
+        $build = fn (bool $value): SentryCommandListener => $this->factory->__invoke(new InMemoryContainer([
+            HubInterface::class    => $this->hubMock,
+            SentryLifecycle::class => $this->lifecycle,
+            'config'               => SentryPsrConfigFixture::config([
+                'log_console_captured_exceptions' => $value,
+            ]),
+        ]));
+
+        $disabled = $build(false);
+        $enabled  = $build(true);
+
+        $this->assertFalse((new ReflectionProperty($disabled, 'logCapturedExceptions'))->getValue($disabled));
+        $this->assertTrue((new ReflectionProperty($enabled, 'logCapturedExceptions'))->getValue($enabled));
+    }
+
     public function testFactoryAppliesConsoleConfigurationFlags(): void
     {
         $listener = $this->factory->__invoke(new InMemoryContainer([

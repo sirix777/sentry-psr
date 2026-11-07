@@ -34,6 +34,7 @@ class SentryCommandListener implements EventSubscriberInterface
         private readonly ?SentryLifecycle $sentryLifecycle = null,
         private readonly ?RedactorInterface $redactor = null,
         private readonly ?ExceptionFilterInterface $exceptionFilter = null,
+        private readonly bool $logCapturedExceptions = true,
     ) {}
 
     public static function getSubscribedEvents(): array
@@ -152,12 +153,14 @@ class SentryCommandListener implements EventSubscriberInterface
 
         $exceptionId = $this->sentryHub->captureException($throwable);
 
-        $this->logger?->error('Command failed with exception', [
-            'command'   => $command?->getName(),
-            'exception' => $throwable->getMessage(),
-            'trace'     => $throwable->getTraceAsString(),
-            'sentry_id' => $exceptionId,
-        ]);
+        if ($this->logCapturedExceptions) {
+            $this->logger?->error('Command failed with exception', [
+                'command'   => $command?->getName(),
+                'exception' => $throwable->getMessage(),
+                'trace'     => $throwable->getTraceAsString(),
+                'sentry_id' => $exceptionId,
+            ]);
+        }
 
         return true;
     }
