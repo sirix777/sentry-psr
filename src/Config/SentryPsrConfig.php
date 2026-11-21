@@ -24,7 +24,7 @@ final readonly class SentryPsrConfig
     /**
      * @var non-empty-list<string>
      */
-    private const REDACTION_RULE_TYPES = [
+    private const array REDACTION_RULE_TYPES = [
         'fixed_value',
         'full_mask',
         'start_end',

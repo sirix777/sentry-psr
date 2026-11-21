@@ -15,7 +15,7 @@ This library provides:
 
 ## Requirements
 
-- PHP `~8.2 || ~8.3 || ~8.4 || ~8.5`
+- PHP `~8.3 || ~8.4 || ~8.5 || ~8.6`
 - `sentry/sentry` `^4.0`
 - Core PSR packages for container, HTTP messages and HTTP middleware/handler.
 

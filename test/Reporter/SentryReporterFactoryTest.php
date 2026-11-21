@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\SentryPsr\Test\Reporter;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
@@ -17,6 +18,7 @@ use Sirix\SentryPsr\Test\Container\InMemoryContainer;
  * @internal
  */
 #[CoversClass(SentryReporterFactory::class)]
+#[AllowMockObjectsWithoutExpectations]
 final class SentryReporterFactoryTest extends TestCase
 {
     public function testCreatesReporterWithHub(): void

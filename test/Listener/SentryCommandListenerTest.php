@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\SentryPsr\Test\Listener;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -32,6 +33,7 @@ use Symfony\Component\Console\Output\NullOutput;
  * @internal
  */
 #[CoversClass(SentryCommandListener::class)]
+#[AllowMockObjectsWithoutExpectations]
 final class SentryCommandListenerTest extends TestCase
 {
     private HubInterface&MockObject $hubMock;

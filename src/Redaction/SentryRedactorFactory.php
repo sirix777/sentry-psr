@@ -20,8 +20,8 @@ use function is_array;
 
 final readonly class SentryRedactorFactory
 {
-    private const DEFAULT_SENSITIVE_KEY_PATTERN = '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i';
-    private const DEFAULT_REPLACEMENT           = '[Filtered]';
+    private const string DEFAULT_SENSITIVE_KEY_PATTERN = '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i';
+    private const string DEFAULT_REPLACEMENT           = '[Filtered]';
 
     /**
      * @throws ContainerExceptionInterface

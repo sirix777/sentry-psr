@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sirix\SentryPsr\Test\Middleware;
 
 use Monolog\Logger;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -21,6 +22,7 @@ use Sirix\SentryPsr\Test\Container\InMemoryContainer;
  * @internal
  */
 #[CoversClass(SentryErrorMiddlewareFactory::class)]
+#[AllowMockObjectsWithoutExpectations]
 final class SentryErrorMiddlewareFactoryTest extends TestCase
 {
     private HubInterface $hubMock;

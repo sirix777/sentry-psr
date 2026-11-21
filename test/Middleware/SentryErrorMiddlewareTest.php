@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\SentryPsr\Test\Middleware;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -28,6 +29,7 @@ use Throwable;
  * @internal
  */
 #[CoversClass(SentryErrorMiddleware::class)]
+#[AllowMockObjectsWithoutExpectations]
 class SentryErrorMiddlewareTest extends TestCase
 {
     private HubInterface&MockObject $hubMock;
@@ -338,7 +340,7 @@ class SentryErrorMiddlewareTest extends TestCase
             ->with($this->callback(function(callable $callback): bool {
                 $scope = $this->createMock(Scope::class);
                 $scope->expects($this->exactly(2))->method('setTag');
-                $scope->expects($this->once())->method('setContext')->with('request', $this->isType('array'));
+                $scope->expects($this->once())->method('setContext')->with('request', $this->isArray());
 
                 $callback($scope);
 

@@ -8,9 +8,9 @@ use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class ExceptionFilterContext
 {
-    public const SOURCE_HTTP     = 'http';
-    public const SOURCE_CONSOLE  = 'console';
-    public const SOURCE_REPORTER = 'reporter';
+    public const string SOURCE_HTTP     = 'http';
+    public const string SOURCE_CONSOLE  = 'console';
+    public const string SOURCE_REPORTER = 'reporter';
 
     /**
      * @param array<string, mixed> $metadata
