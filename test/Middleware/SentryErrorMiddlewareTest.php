@@ -338,7 +338,7 @@ class SentryErrorMiddlewareTest extends TestCase
             ->with($this->callback(function(callable $callback): bool {
                 $scope = $this->createMock(Scope::class);
                 $scope->expects($this->exactly(2))->method('setTag');
-                $scope->expects($this->once())->method('setContext')->with('request', $this->isType('array'));
+                $scope->expects($this->once())->method('setContext')->with('request', $this->isArray());
 
                 $callback($scope);
 
