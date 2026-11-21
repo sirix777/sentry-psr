@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sirix\SentryPsr\Test\Listener;
 
 use Monolog\Logger;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -22,6 +23,7 @@ use Sirix\SentryPsr\Test\Container\InMemoryContainer;
  * @internal
  */
 #[CoversClass(SentryCommandListenerFactory::class)]
+#[AllowMockObjectsWithoutExpectations]
 final class SentryCommandListenerFactoryTest extends TestCase
 {
     private HubInterface $hubMock;

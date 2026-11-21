@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sirix\SentryPsr\Test\ExceptionFilter;
 
 use LogicException;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,6 +18,7 @@ use Sirix\SentryPsr\ExceptionFilter\ExceptionFilterContext;
  */
 #[CoversClass(ConfiguredExceptionFilter::class)]
 #[CoversClass(ExceptionFilterContext::class)]
+#[AllowMockObjectsWithoutExpectations]
 final class ConfiguredExceptionFilterTest extends TestCase
 {
     public function testAllowsExceptionWhenNoRulesMatch(): void

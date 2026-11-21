@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sirix\SentryPsr\Test\ExceptionFilter;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -21,6 +22,7 @@ use Sirix\SentryPsr\Test\Container\InMemoryContainer;
  * @internal
  */
 #[CoversClass(ConfiguredExceptionFilterFactory::class)]
+#[AllowMockObjectsWithoutExpectations]
 final class ConfiguredExceptionFilterFactoryTest extends TestCase
 {
     public function testFactoryCreatesConfiguredFilterFromContainer(): void
