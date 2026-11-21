@@ -9,7 +9,7 @@ return ConfigBuilder::create()
     ->inDir(__DIR__ . '/src')
     ->inDir(__DIR__ . '/test')
     ->setRules([
-        '@PHP8x2Migration' => true,
+        '@PHP8x3Migration' => true,
     ])
     ->getConfig()
     ->setParallelConfig(PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
